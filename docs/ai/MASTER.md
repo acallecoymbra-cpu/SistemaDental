@@ -13,7 +13,7 @@
 
 ## Alcance acordable
 
-Un dentista, pacientes sin cuenta, agenda de 90 min, anticipo 10–20 Bs por QR externo, comprobante único, verificación manual, historia clínica versionada, correo solo para cancelación y chat fijo. Cualquier ampliación (roles, móvil, pasarela, IA, inventario) necesita nuevo requisito.
+Un dentista, pacientes sin cuenta (nombre + celular), inicios cada 45 min desde el día siguiente (duración pendiente), anticipo único 10–20 Bs sobre consulta de 30 Bs por QR externo, comprobante único, verificación manual, cuatro estados de cita, historia clínica versionada, correo solo para cancelación y chat fijo. Las respuestas del cliente del 2026-11-20 (`docs/VALIDACION-REQUISITOS.md` §6) prevalecen sobre el Word donde lo contradicen. Cualquier ampliación (roles, móvil, pasarela, IA, inventario) necesita nuevo requisito.
 
 ## Arquitectura de referencia (pendiente de ADR)
 

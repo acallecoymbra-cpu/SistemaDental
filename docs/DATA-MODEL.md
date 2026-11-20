@@ -1,10 +1,10 @@
 # DATA-MODEL — modelo de datos preliminar
 
-**Estado:** PROPUESTA / no aprobar migraciones antes de validar S-01…S-14 y ADR. **Fuente:** sección 11 de `Doc_Dentista_v4.2.docx` + convenciones del brief. **Motor sugerido:** PostgreSQL (pendiente de ADR); **PK sugerida:** UUID.
+**Estado:** PROPUESTA / no aprobar migraciones hasta cerrar las preguntas abiertas de `VALIDACION-REQUISITOS.md` §7 (en especial la duración de consulta). **Fuente:** sección 11 de `Doc_Dentista_v4.2.docx`, modificada por las respuestas del cliente del 2026-11-20 (V-01…V-13), + convenciones del brief. **Motor:** PostgreSQL (ACEPTADO por el cliente, ADR-001); **PK sugerida:** UUID.
 
 ## Convenciones
 
-Tablas/columnas en `snake_case` inglés; la UI en español. PK UUID por consistencia (sin requisito de offline); FKs explícitas; `created_at` y `updated_at` UTC cuando proceda; instantes UTC, render `America/La_Paz`; dinero `bigint` en centavos (`*_cents`) más columna `currency` (`'BOB'`, `CHECK currency = 'BOB'` mientras no se apruebe otra moneda) en cada tabla con importes, según ADR-002; sin `float`. Se conservan los 5 estados del documento, sin añadir otros silenciosamente. Identificadores públicos opacos; jamás confiar en ID del cliente para autorizar accesos. No borrado físico de citas, pacientes, versiones ni auditoría.
+Tablas/columnas en `snake_case` inglés; la UI en español. PK UUID por consistencia (sin requisito de offline); FKs explícitas; `created_at` y `updated_at` UTC cuando proceda; instantes UTC, render `America/La_Paz`; dinero `bigint` en centavos (`*_cents`) más columna `currency` (`'BOB'`, `CHECK currency = 'BOB'` mientras no se apruebe otra moneda) en cada tabla con importes, según ADR-002; sin `float`. Se usan los 4 estados aprobados por el cliente (V-08), sin añadir otros silenciosamente. Identificadores públicos opacos; jamás confiar en ID del cliente para autorizar accesos. No borrado físico de citas, pacientes, versiones ni auditoría.
 
 Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuestas. Los tamaños concretos y la política de retención deben definirse al diseñar migraciones.
 
@@ -22,30 +22,35 @@ Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuest
 
 ### `patient` — datos de contacto (RF-03/04/08/22/23)
 
-- `id uuid PK`; `full_name varchar NOT NULL`; `normalized_name varchar NOT NULL`; `phone varchar NOT NULL`; `email varchar?`; `origin enum('web','dentist')`; `created_at timestamptz`; `updated_at timestamptz`; `updated_by uuid FK dentist_user?`.
-- `UNIQUE(normalized_name, phone)`; índice por `phone`, búsqueda indexada por nombre normalizado. Normalización y formato de celular deben ser deterministas. **El correo es obligatorio durante CU-01, opcional en CU-12**.
+- `id uuid PK`; `full_name varchar NOT NULL`; `normalized_name varchar NOT NULL`; `phone varchar NOT NULL`; `email varchar?`; `birth_date date?` (obligatoria al registrarse por la web, V-02); `guardian_phone varchar?` (obligatorio si es menor de edad, V-02); `origin enum('web','dentist')`; `created_at timestamptz`; `updated_at timestamptz`; `updated_by uuid FK dentist_user?`.
+- `UNIQUE(normalized_name, phone)`; índice por `phone`, búsqueda indexada por nombre normalizado. Normalización y formato de celular deben ser deterministas. **El correo es obligatorio durante CU-01, opcional en CU-12** (V-03). Mismo celular con distinto nombre = pacientes distintos (V-02). La regla menor ⇒ `guardian_phone` se valida en aplicación con la fecha de La Paz; pendiente definir si el celular del tutor identifica al menor en CU-03.
 
 ### `treatment` — catálogo vigente (RF-01/15)
 
-- `id uuid PK`; `name varchar UNIQUE NOT NULL`; `description text?`; `deposit_cents bigint NOT NULL`; `currency char(3) NOT NULL DEFAULT 'BOB'`; `active boolean DEFAULT true`; `created_at timestamptz`; `updated_at timestamptz`.
-- `CHECK deposit_cents BETWEEN 1000 AND 2000` (10–20 Bs). Eliminar es desactivar. Semilla de siete tratamientos exactos del Word.
+- `id uuid PK`; `name varchar UNIQUE NOT NULL`; `description text?`; `active boolean DEFAULT true`; `created_at timestamptz`; `updated_at timestamptz`.
+- Sin anticipo por tratamiento (V-06: el anticipo es único, ver `clinic_settings`). Eliminar es desactivar. Semilla de siete tratamientos exactos del Word.
+
+### `clinic_settings` — configuración única de la clínica (RF-07/15, V-06)
+
+- `id uuid PK` (una sola fila); `consultation_price_cents bigint NOT NULL` (30 Bs = `3000`); `deposit_cents bigint NOT NULL`; `currency char(3) NOT NULL DEFAULT 'BOB'`; `payment_qr_ref varchar?` (referencia a la imagen del QR vigente, nunca la imagen en Git); `whatsapp_phone varchar?`; `updated_at timestamptz`; `updated_by uuid FK dentist_user?`.
+- `CHECK deposit_cents BETWEEN 1000 AND 2000` (10–20 Bs) y `deposit_cents <= consultation_price_cents`. Cada cambio de anticipo o QR se audita. Saldo en clínica: PROPUESTA (V-06b), sin cobro en sistema.
 
 ### `availability_interval` — horario por fecha (RF-02/14)
 
 - `id uuid PK`; `service_date date NOT NULL`; `starts_local time NOT NULL`; `ends_local time NOT NULL`; `created_by uuid FK dentist_user`; `created_at timestamptz`; `updated_at timestamptz`.
-- `CHECK ends_local > starts_local`; al menos 90 min; prohibición de intervalos superpuestos por fecha; índice `service_date`. Validar al modificar que no excluya una cita confirmada. Si aparecen intervalos nocturnos, abrir ADR: v4.2 no los requiere.
+- `CHECK ends_local > starts_local`; al menos la duración vigente de consulta (90 o 45 min, PENDIENTE V-05b); prohibición de intervalos superpuestos por fecha; índice `service_date`. Validar al modificar que no excluya una cita confirmada. Si aparecen intervalos nocturnos, abrir ADR: v4.2 no los requiere.
 
 ### `appointment` — agenda y estado de vida (RF-02/04/05/06/16–20/26)
 
 - `id uuid PK`; `patient_id uuid FK patient NOT NULL`; `treatment_id uuid FK treatment NOT NULL`; `starts_at timestamptz NOT NULL`; `ends_at timestamptz NOT NULL`; `status appointment_status NOT NULL`; `deposit_cents bigint NOT NULL` (snapshot); `diagnosis text?`; `cost_cents bigint?`; `currency char(3) NOT NULL DEFAULT 'BOB'` (aplica a `deposit_cents` y `cost_cents`); `refunded enum('yes','no','not_applicable')?`; `cancel_reason text?`; `origin enum('web','dentist')`; `created_at timestamptz`; `updated_at timestamptz`; `completed_at timestamptz?`; `completed_by uuid FK dentist_user?`; `canceled_at timestamptz?`; `canceled_by uuid FK dentist_user?`.
-- `ends_at = starts_at + interval '90 minutes'`, costo no negativo, estado terminal inmutable. Indexar `(starts_at,status)` y `(patient_id,starts_at)`. `deposit_cents` **no** se recalcula al cambiar `treatment`.
-- **Integridad crítica:** impedir superposición entre citas `confirmada` por restricción transaccional en PostgreSQL (p. ej. índice GiST/exclusion constraint `tstzrange(starts_at,ends_at,'[)')` `WITH &&` `WHERE status='confirmada'` y extensión `btree_gist` si necesaria). El literal del predicado debe coincidir exactamente con el valor almacenado del enum `appointment_status`. Validación UX previa **no sustituye** la restricción de BD. Aclarar si `completada` debe excluirse también: el texto v4.2 especifica solo `confirmada`.
+- `ends_at = starts_at + duración vigente` (90 o 45 min, PENDIENTE V-05b); inicios alineados a la grilla de **45 min** dentro del intervalo; `starts_at` desde el día siguiente en La Paz (V-05); costo no negativo, estado terminal inmutable. Indexar `(starts_at,status)` y `(patient_id,starts_at)`. `deposit_cents` es snapshot de `clinic_settings` al crear la cita y **no** se recalcula si el dentista cambia el anticipo.
+- **Integridad crítica:** impedir superposición entre citas que ocupan franja (`confirmada` y `completada`, V-09) por restricción transaccional en PostgreSQL (p. ej. índice GiST/exclusion constraint `tstzrange(starts_at,ends_at,'[)')` `WITH &&` `WHERE status IN ('confirmada','completada')` y extensión `btree_gist` si necesaria). Los literales del predicado deben coincidir exactamente con los valores almacenados del enum `appointment_status`. Validación UX previa **no sustituye** la restricción de BD.
 - Contar 3 pendientes por paciente **transaccionalmente** al crear (evitar condición de carrera).
 
 ### `payment_proof` — anticipo QR fuera del sistema (RF-07/17/18)
 
 - `id uuid PK`; `appointment_id uuid FK appointment UNIQUE NOT NULL`; `receipt_number varchar UNIQUE NOT NULL`; `amount_cents bigint NOT NULL`; `currency char(3) NOT NULL DEFAULT 'BOB'`; `submitted_at timestamptz NOT NULL`; `confirmed_by uuid FK dentist_user?`; `confirmed_at timestamptz?`; `created_at timestamptz`.
-- No se integra con bancos; el dentista verifica y confirma. Rechazo como estado/acción **prohibido** por v4.2. Confirmación y transición de `appointment` ocurren en una transacción.
+- No se integra con bancos; el dentista compara el número con su cuenta y confirma (V-07). La consulta sigue `por_pagar` mientras su comprobante no esté confirmado (no existe `pago_en_revision`). `amount_cents` = snapshot de `clinic_settings.deposit_cents`. Rechazo como estado/acción **prohibido** por v4.2. Confirmación y transición de `appointment` ocurren en una transacción.
 
 ### `clinical_record` — agregado clínico de paciente (RF-23–25)
 
@@ -96,6 +101,7 @@ erDiagram
  PATIENT ||--o{ APPOINTMENT : books
  PATIENT ||--|| CLINICAL_RECORD : has
  TREATMENT ||--o{ APPOINTMENT : selected_for
+ DENTIST_USER ||--o| CLINIC_SETTINGS : configures
  APPOINTMENT ||--o| PAYMENT_PROOF : submitted_for
  APPOINTMENT ||--o{ APPOINTMENT_CHANGE : history
  APPOINTMENT ||--o{ EMAIL_NOTIFICATION : cancellation_email
@@ -108,7 +114,7 @@ erDiagram
 
 ## Enumeraciones (no ampliar sin validación)
 
-- `appointment_status`: `por_pagar`, `pago_en_revision`, `confirmada`, `completada`, `cancelada` (API puede utilizar strings ingleses si establece mapeo explícito en `packages/contracts`, preservando semántica y trazabilidad).
+- `appointment_status`: `por_pagar`, `confirmada`, `completada`, `cancelada` (V-08; `no_asistio` es PROPUESTA, no crearlo sin aprobación) (API puede utilizar strings ingleses si establece mapeo explícito en `packages/contracts`, preservando semántica y trazabilidad).
 - `patient_origin`: `web`, `dentist`.
 - `refund_status`: `yes`, `no`, `not_applicable`.
 - `notification_status`: `pending`, `sent`, `failed`.
@@ -116,24 +122,25 @@ erDiagram
 
 ## Flujos de integridad y seguridad
 
-1. **Confirmación:** transacción verifica estado `pago_en_revision`, comprobante y disponibilidad; cambia a `confirmada`; registra actor/fecha/auditoría. Una segunda confirmación solapada debe fallar inequívocamente, incluso bajo concurrencia.
+1. **Confirmación:** transacción verifica estado `por_pagar` con comprobante registrado, y disponibilidad; cambia a `confirmada`; registra actor/fecha/auditoría. Una segunda confirmación solapada debe fallar inequívocamente, incluso bajo concurrencia.
 2. **Reprogramación:** misma transacción, validar intervalo, actualizar inicio y fin, registrar ambos valores y auditoría; estado terminal no modificable.
 3. **Cancelación:** cambio a `cancelada` y evento de correo en outbox **atómicos**; enviar en proceso separado. No borrar fila.
-4. **Caducidad:** job con marca de idempotencia cancela únicamente `por_pagar` de inicio pasado; no reinterpretar `pago_en_revision` sin aprobación.
+4. **Caducidad:** job con marca de idempotencia cancela `por_pagar` de inicio pasado. PENDIENTE: si excluye las que ya tienen comprobante (riesgo 3 de `VALIDACION-REQUISITOS.md`).
 5. **Nueva versión clínica:** transacción inserta `clinical_version` n+1 y `tooth_state` asociado, sin actualizar versión previa.
-6. **Pacientes:** único por par normalizado+celular; mismo celular con distinto nombre requiere advertencia en UI administrativa; no deduplicar automáticamente familiares.
-7. **Control público:** consulta de citas minimiza exposición. La seguridad de nombre+celular solo está definida en v4.2; el riesgo de suplantación queda elevado para decisión S-01.
+6. **Pacientes:** único por par normalizado+celular; mismo celular con distinto nombre es otro paciente (V-02), con advertencia informativa en UI administrativa; no deduplicar automáticamente familiares.
+7. **Control público:** consulta de citas minimiza exposición. Nombre+celular sin código aprobado por el cliente (ADR-003); riesgo residual aceptado.
 
 ## Seeds propuestas
 
-- Siete tratamientos: limpieza, blanqueamiento, exodoncia, prótesis fija, prótesis removible, obturación, cirugía de terceros molares. **Anticipos específicos sin valor hasta aprobación del dentista** (rango válido 10–20 Bs).
+- Siete tratamientos: limpieza, blanqueamiento, exodoncia, prótesis fija, prótesis removible, obturación, cirugía de terceros molares. Sin anticipo por tratamiento.
+- `clinic_settings`: consulta 30 Bs; anticipo único **sin valor hasta que el dentista lo fije** (rango 10–20 Bs); QR cargado por el dentista, nunca versionado.
 - Plantilla básica de historia clínica. Catálogo de piezas FDI, índice CPO-D y estados sólo tras validación.
 - Primer dentista mediante CLI segura, con contraseña inicial temporal y cambio obligatorio. No subir usuario/secretos reales a Git.
 
 ## Orden de migraciones sugerido
 
 1. Usuarios y sesiones.
-2. Pacientes y tratamientos.
+2. Pacientes, tratamientos y `clinic_settings`.
 3. Intervalos y citas + restricción de solapes.
 4. Comprobantes y cambios de cita.
 5. Historia, plantillas, versiones y estados de piezas.

@@ -14,7 +14,7 @@
 
 - Vertical slice: contrato → migración → lógica API → UI → tests → evidencia.
 - No asumir que la demo Lúmina hace reservas reales.
-- Razonar a partir de las reglas del Word: un dentista, 90 min, anticipo QR externo, pago confirmado manualmente, cinco estados, historial versionado.
+- Razonar a partir de las reglas vigentes (Word + respuestas del cliente en `VALIDACION-REQUISITOS.md` §6): un dentista, inicios cada 45 min, anticipo único por QR externo, pago confirmado manualmente, cuatro estados, historial versionado.
 - Ante contradicción: registrar desviación, no sustituir requisito por suposición.
 - Seguir least privilege y privacidad; no exponer historia clínica a endpoints públicos.
 - Nunca describir test no ejecutado como PASS. Documentar comando, entorno, fecha y resultado de cada validación.

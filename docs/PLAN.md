@@ -12,14 +12,14 @@ Construir un sistema web para un único dentista que centralice pacientes, agend
 
 | Área | Alcance MVP | RF | CU |
 |---|---|---|---|
-| Catálogo | Siete tratamientos iniciales; activar, desactivar, editar; anticipo fijo/copia al reservar | 01, 15 | 01, 07 |
-| Horarios/disponibilidad | Intervalos por fecha, cálculo de 90 min, inicios cada 30 min, protección contra solapes | 02, 14 | 01, 06, 10 |
-| Agendamiento público | Nombre/celular/email, máximo 3 pendientes, estado inicial `por_pagar` | 03–06 | 01 |
+| Catálogo y configuración | Siete tratamientos iniciales; activar, desactivar, editar. Consulta 30 Bs; anticipo único 10–20 Bs y QR vigente configurados por el dentista; copia del anticipo al reservar | 01, 15 | 01, 07 |
+| Horarios/disponibilidad | Intervalos por fecha, inicios cada 45 min, duración fija (90 o 45 min, pendiente), desde el día siguiente, protección contra solapes | 02, 14 | 01, 06, 10 |
+| Agendamiento público | ¿Ya registrado? → datos existentes o registro con fecha de nacimiento (menor ⇒ celular de padre/madre); email obligatorio; máximo 3 pendientes; estado inicial `por_pagar` | 03–06 | 01 |
 | Pago externo | Mostrar QR, registrar referencia única; dentista confirma, no rechaza | 07, 17, 18 | 02, 09 |
 | Vista paciente | Consultar solo sus consultas y retomar pago; limitación de intentos | 08, 09 | 03 |
 | Chat y contacto | Reglas fijas, urgencias, fallback y WhatsApp visible | 10–12, 28 | 04 |
 | Autenticación | Usuario/clave dentista; bloqueo e inactividad | 13 | 05 |
-| Agenda | Día/semana, filtros, detalle, mover y cancelar sin borrado físico | 16, 19, 20 | 08, 10, 11 |
+| Agenda | Día/semana, filtros, detalle, mover y cancelar sin borrado físico; el paciente pide cancelar por WhatsApp; anticipo no se devuelve | 16, 19, 20 | 08, 10, 11 |
 | Notificaciones | Correo de cancelación, reintentos hasta 3 | 21 | 11 |
 | Pacientes | Alta/edición, deduplicación, búsqueda, ficha | 22, 23 | 12, 13 |
 | Clínica | Historia versionada, odontograma, índice dental, diagnóstico y cierre de consulta | 24–26 | 14, 15 |
@@ -70,13 +70,13 @@ flowchart TD
  B --> C[Crear cita POR_PAGAR - no bloquea]
  C --> D[Mostrar QR externo]
  D --> E[Paciente ingresa comprobante único]
- E --> F[PAGO_EN_REVISION - no bloquea]
- F --> G[Dentista verifica pago fuera del sistema]
+ E --> F[Sigue POR_PAGAR con comprobante - no bloquea]
+ F --> G[Dentista compara número con su cuenta]
  G --> H{¿Horario sigue libre?}
- H -->|Sí, transacción atómica| I[CONFIRMADA - bloquea 90 min]
- H -->|No| J[Permanece en revisión; acuerdo manual para mover o cancelar/devolver]
- I --> K[COMPLETADA con diagnóstico y costo]
- C --> L[Cancelación por vencimiento si sigue POR_PAGAR]
+ H -->|Sí, transacción atómica| I[CONFIRMADA - bloquea la franja]
+ H -->|No| J[Sigue POR_PAGAR; acuerdo manual para mover o cancelar - anticipo pendiente de definir]
+ I --> K[COMPLETADA con diagnóstico y costo - sigue ocupando la franja]
+ C --> L[Cancelación por vencimiento si sigue POR_PAGAR - caso con comprobante pendiente]
 ```
 
 El **servidor** calcula disponibilidad de intervalos `[inicio, fin)` y vuelve a validar en la transacción de confirmación. No confiar en UI ni en un `SELECT` previo como única protección.
@@ -89,7 +89,7 @@ Una ficha contiene `clinical_record` y versiones inmutables. Guardar una modific
 
 **Portal público:** `Inicio` (marca/hero), `Tratamientos`, `Agendar` (tratamiento → fecha y horario → identificación → resumen → QR/comprobante), `Mis consultas` (identificación y listado mínimo), `Chat y contacto` (FAQ reglada + WhatsApp visible).
 
-**Panel privado:** `Iniciar sesión`, `Agenda` (día/semana, estados, filtros), `Pagos en revisión` (comprobante + confirmar), `Horarios` (intervalos por fecha), `Tratamientos` (catálogo + anticipo), `Pacientes` (buscador), `Ficha paciente` (contactos, consultas, última versión, versiones previas), `Odontograma` (pieza/estado), `Cerrar consulta` (diagnóstico y costo), `Auditoría` (según privilegios). En el MVP solo existe el dentista como usuario interno.
+**Panel privado:** `Iniciar sesión`, `Agenda` (día/semana, estados, filtros), `Pagos por confirmar` (consultas `por_pagar` con comprobante + confirmar), `Horarios` (intervalos por fecha), `Tratamientos` (catálogo), `Configuración` (precio de consulta, anticipo único y QR), `Pacientes` (buscador), `Ficha paciente` (contactos, consultas, última versión, versiones previas), `Odontograma` (pieza/estado), `Cerrar consulta` (diagnóstico y costo), `Auditoría` (según privilegios). En el MVP solo existe el dentista como usuario interno.
 
 ## 6. Reutilización de Lúmina (decisión por pieza)
 
@@ -118,17 +118,17 @@ RNF definidos: HTTPS/hashes, privacidad, integridad transaccional, huso/formatos
 
 | Riesgo | Severidad | Mitigación |
 |---|---|---|
-| Paciente accede con nombre/celular sin prueba de posesión | Alta | Aprobación explícita, amenaza modelada, considerar OTP |
+| Paciente accede con nombre/celular sin prueba de posesión (riesgo aceptado por el cliente, ADR-003) | Alta | Rate limit RF-09, respuestas mínimas, sin datos clínicos |
 | Doble confirmación de citas coincidentes | Crítica | Restricción/serialización en BD y test concurrente |
 | Alteración/pérdida de historia clínica | Crítica | Versionado inmutable, auditoría, backups probados |
 | Requerimientos odontológicos incompletos | Alta | Validación dentista de FDI, CPO-D y catálogo de estados |
-| Datos en GitHub público (visibilidad pública aceptada, ADR-008) | Alta | Nunca versionar datos clínicos reales, secretos ni el documento de requisitos; revisar cada STAGE; Forgejo canónico pendiente |
+| Datos en GitHub público (visibilidad pública ratificada por el propietario pese a que el cliente pidió espejo privado, ADR-008) | Alta | Nunca versionar datos clínicos reales, secretos ni el documento de requisitos; revisar cada STAGE; Forgejo canónico pendiente |
 | Dependencia de QR/SMTP externo | Media | Flujo manual claro, outbox de correo |
-| Migración de 400–500 cuadernos | Alta | Piloto de digitalización + control de calidad + deduplicación |
+| Migración de cuadernos (últimos 6 meses primero; resto gradual) | Alta | Piloto de digitalización + control de calidad + deduplicación; revisor pendiente |
 
 ## 9. Puertas de aprobación
 
-1. Validación clínica y alcance del Word, especialmente supuestos S-01 a S-14.
+1. Validación clínica y alcance del Word: respuestas del cliente registradas el 2026-11-20 (`VALIDACION-REQUISITOS.md` §6); quedan abiertas las de §7.
 2. ADRs de motor BD, autenticación paciente, solapes y repositorios.
 3. Modelo relacional/diagramas de datos aprobados.
 4. Roadmap priorizado y Definition of Done acordado.

@@ -1,43 +1,30 @@
 # HANDOFF — continuidad
 
-**as_of_sha:** `8251eacee5068f0a559c1ce88e53b4006970b5a7` · **Fecha:** 2026-11-20 15:22 (America/La_Paz) · **Procedencia:** Claude Code, repositorio local verificado.
+**as_of_sha:** `d49f6e037fa93a2f5df6b2001710fb1f866c33dd` · **Fecha:** 2026-11-20 17:34 (America/La_Paz) · **Procedencia:** Claude Code, repositorio local verificado.
 
 ## Resumen de continuidad (≤25 líneas)
 
 - Proyecto: Renovando Sonrisas / Sistema Dental.
-- Estado: revisión de requerimientos y planificación, no desarrollo.
-- Fuente: Word v4.2 (18/11/2026), pendiente de validación; no versionado en el repo.
-- Repositorio: único remoto GitHub `acallecoymbra-cpu/SistemaDental` (PUBLIC), `main` = `8251eac`; Forgejo no configurado.
-- Paquete de planificación en directorio de trabajo, **untracked**.
-- Documento de alcance: `docs/PLAN.md`.
-- Riesgos/preguntas: `docs/VALIDACION-REQUISITOS.md`.
-- Modelo DB propuesto: `docs/DATA-MODEL.md`.
-- Decisiones no aprobadas: `docs/ai/DECISIONS.md` (ninguna ACEPTADA).
-- Roadmap: `docs/ai/ROADMAP.md`; siguiente TASK-001.
+- Estado: validación parcial de requerimientos y planificación, no desarrollo.
+- Fuente: Word v4.2 (18/11/2026), modificado por las respuestas del cliente del 2026-11-20 (`docs/VALIDACION-REQUISITOS.md` §6); el Word no está versionado.
+- Repositorio: único remoto GitHub `acallecoymbra-cpu/SistemaDental` (PUBLIC), `main` = `d49f6e0`; Forgejo no configurado.
+- Cambios documentales de esta entrega: en el commit siguiente a `d49f6e0` (STAGE, COMMIT y PUSH autorizados el 2026-11-20).
+- Alcance: `docs/PLAN.md`. Modelo DB: `docs/DATA-MODEL.md`. Decisiones: `docs/ai/DECISIONS.md`. Roadmap: `docs/ai/ROADMAP.md` (TASK-001 IN_PROGRESS).
 - Validaciones: NO EJECUTADAS; nada implementado.
-- STAGE/COMMIT/PUSH/DEPLOY: sin autorización.
+- STAGE, COMMIT y PUSH autorizados para esta entrega; DEPLOY sin autorización.
 
-## Última entrega — auditoría de integración y correcciones documentales (2026-11-20)
+## Última entrega — registro de respuestas del cliente (2026-11-20)
 
-Auditoría del paquete frente a `docs/BRIEF-SISTEMA-DENTAL.md` y `docs/referencia/lumina-dental/`. Correcciones aplicadas, solo documentación:
+Fuente: documento «Renovando Sonrisas: validación con el cliente» pegado por el propietario en la sesión. Solo documentación:
 
-- `STATUS.md` / `HANDOFF.md`: estado Git local verificado, procedencia y visibilidad pública observada.
-- `README.md`: estado actual, fuentes y remoto real.
-- `docs/DATA-MODEL.md`: restricción de solapes usa `status='confirmada'` (antes `confirmed`); columnas `currency` (`BOB`) junto a cada importe; importes en `bigint` (ADR-002).
-- `docs/PLAN.md`: `appointment.starts_at` (singular); nota que reemplaza la tabla «Qué se puede aprovechar» del README de Lúmina.
-- `docs/ai/MASTER.md`: misma nota de precedencia sobre la referencia Lúmina.
-- `docs/ai/ROADMAP.md`: TASK-102 incluye auditoría de lectura clínica; TASK-005 marcada como entregada pendiente de versionar.
-
-Decisiones del propietario (misma fecha):
-
-- `00-LEEME.md` y `docs/IMPLEMENTATION-HANDOFF.md` descartados; movidos fuera del repo a `C:\Users\aliva\Documents\Claude-Docs\SistemaDental\descartados-2026-11-20\`.
-- `Doc_Dentista_v4.2.docx` queda fuera del repositorio.
-- GitHub permanece público → ADR-008 parcialmente aceptada; README y riesgo en `PLAN.md` actualizados.
-
-No modificados: `docs/referencia/`, `AGENTS.md`, `PROTOCOL.md`, `VALIDACION-REQUISITOS.md`; normalizar etiquetas de estado en `DECISIONS.md` queda pendiente.
+- `docs/VALIDACION-REQUISITOS.md`: §6 con las 13 respuestas (V-01…V-13) y su estado ACEPTADA/PROPUESTA/PENDIENTE; §1, §2, §4 y §5 actualizados; §7 con 6 preguntas abiertas.
+- `docs/ai/DECISIONS.md`: ADR-001/003/004/010 aceptadas; ADR-005 parcial (cuatro estados, 45 min, anticipo único); ADR-008: GitHub sigue público (ratificado por el propietario pese a V-13).
+- `docs/DATA-MODEL.md`: enum de 4 estados; nueva tabla `clinic_settings` (consulta 30 Bs, anticipo único, QR); `treatment` sin anticipo; `patient.birth_date` y `guardian_phone`; solapes incluyen `completada`; grilla de 45 min; duración pendiente.
+- `docs/PLAN.md`, `docs/ai/MASTER.md`, `docs/ai/PROTOCOL.md`, `docs/ai/ROADMAP.md`: alineados con lo anterior; TASK-203 y TASK-504 marcadas BLOCKED.
 
 ## Punto exacto de reanudación
 
-1. Re-verificar Git (no asumir que sigue en `8251eac`).
-2. Con autorización separada: STAGE (README + `AGENTS.md` + `docs/{PLAN,DATA-MODEL,VALIDACION-REQUISITOS}.md` + `docs/ai/*`), luego COMMIT, luego PUSH.
-3. TASK-001: registrar respuestas y decisiones ACEPTADAS con fecha/evidencia.
+1. Re-verificar Git (no asumir que sigue en `d49f6e0`).
+2. Propietario revisa el diff.
+3. Con autorización separada: STAGE, COMMIT, PUSH de los archivos listados en `STATUS.md`.
+4. Enviar al cliente las preguntas de `VALIDACION-REQUISITOS.md` §7; con la duración de consulta, desbloquear TASK-002/TASK-203.
