@@ -1,23 +1,30 @@
-# Sistema Dental
+# Sistema Dental — Renovando Sonrisas
 
-Sistema de gestión para clínica / consultorio dental (DevSure).
+Sistema web de gestión para el consultorio dental Renovando Sonrisas.
 
-**Estado:** planificación. Todavía no hay código de implementación.
+**Estado:** planificación (borrador, pendiente de aprobación). Todavía no hay código de implementación. Estado vigente en [`docs/ai/STATUS.md`](docs/ai/STATUS.md).
 
 ## Por dónde empezar
 
 | Documento | Qué es |
 |---|---|
-| [`docs/BRIEF-SISTEMA-DENTAL.md`](docs/BRIEF-SISTEMA-DENTAL.md) | Brief base para la IA planificadora: stack (Node 24, pnpm + Turborepo, Next.js, NestJS, TypeORM, React Native/Expo), reglas de base de datos, buenas prácticas, ciclo de memoria entre IAs y entregables esperados |
-| [`docs/referencia/lumina-dental/`](docs/referencia/lumina-dental/README.md) | Copia de la demo «Lúmina Dental» del sitio DevSure (código, imágenes, diseño y pruebas), punto de partida del portal público y del flujo de citas |
+| [`AGENTS.md`](AGENTS.md) | Reglas del proyecto y bootstrap obligatorio para agentes |
+| [`docs/ai/`](docs/ai/) | Memoria versionada: PROTOCOL, MASTER, STATUS, HANDOFF, ROADMAP, DECISIONS |
+| [`docs/VALIDACION-REQUISITOS.md`](docs/VALIDACION-REQUISITOS.md) | Trazabilidad RF/RNF, discrepancias y preguntas al cliente |
+| [`docs/PLAN.md`](docs/PLAN.md) | Visión, alcance, arquitectura, pantallas y riesgos |
+| [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) | Modelo relacional propuesto y diagrama ER |
+| [`docs/BRIEF-SISTEMA-DENTAL.md`](docs/BRIEF-SISTEMA-DENTAL.md) | Brief técnico y de método (stack, reglas de BD, ciclo de memoria entre IAs) |
+| [`docs/referencia/lumina-dental/`](docs/referencia/lumina-dental/README.md) | Demo ficticia «Lúmina Dental» de DevSure: referencia visual y del flujo de cita, no funcionalidad real |
 
-Los requerimientos funcionales del propietario se añaden en la sección 3 del brief.
+## Fuentes
+
+- **Alcance funcional:** documento de requerimientos `Doc_Dentista_v4.2.docx` (pendiente de validación; no versionado en este repositorio).
+- **Método y stack:** el brief, sujeto a los ADR de `docs/ai/DECISIONS.md`.
 
 ## Próximos pasos
 
-1. La IA planificadora (ChatGPT) lee el brief y la referencia, hace sus preguntas y entrega `docs/PLAN.md`, `docs/DATA-MODEL.md`, los ADR y `docs/ai/ROADMAP.md`.
-2. Claude Code implementa por vertical slices siguiendo `docs/ai/`.
+Ver [`docs/ai/ROADMAP.md`](docs/ai/ROADMAP.md): validación de requisitos y ADR (TASK-001) antes de iniciar el monorepo.
 
 ## Repositorio
 
-Forgejo será el repositorio canónico y GitHub un mirror de solo lectura (ver sección 10.4 del brief). Ninguno de los dos está configurado todavía.
+Repositorio **público** en GitHub por decisión del propietario (ADR-008). No se versionan datos de pacientes, archivos clínicos, secretos ni el documento de requisitos del cliente. Forgejo como repositorio canónico sigue pendiente.
