@@ -1,0 +1,37 @@
+# Dependencias y builds
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.expo/
+coverage/
+*.tsbuildinfo
+
+# Datos locales (base de datos, subidas)
+.data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# Pruebas
+playwright-report/
+test-results/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
