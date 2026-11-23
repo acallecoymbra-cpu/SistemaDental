@@ -4,7 +4,7 @@
 
 ## Convenciones
 
-Tablas/columnas en `snake_case` inglés; la UI en español. PK UUID por consistencia (sin requisito de offline); FKs explícitas; `created_at` y `updated_at` UTC cuando proceda; instantes UTC, render `America/La_Paz`; dinero `bigint` en centavos (`*_cents`) más columna `currency` (`'BOB'`, `CHECK currency = 'BOB'` mientras no se apruebe otra moneda) en cada tabla con importes, según ADR-002; sin `float`. Se usan los 4 estados aprobados por el cliente (V-08), sin añadir otros silenciosamente. Identificadores públicos opacos; jamás confiar en ID del cliente para autorizar accesos. No borrado físico de citas, pacientes, versiones ni auditoría.
+Tablas/columnas en `snake_case` inglés; la UI en español. PK UUID por consistencia (sin requisito de offline); FKs explícitas; `created_at` y `updated_at` UTC cuando proceda; instantes UTC, render `America/La_Paz`; dinero `bigint` en centavos (`*_cents`) más columna `currency` (`'BOB'`, `CHECK currency = 'BOB'` mientras no se apruebe otra moneda) en cada tabla con importes, según ADR-002; sin `float`. Se usan los 5 estados aprobados por el cliente (V-08, V-22), sin añadir otros silenciosamente. Identificadores públicos opacos; jamás confiar en ID del cliente para autorizar accesos. No borrado físico de citas, pacientes, versiones ni auditoría.
 
 Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuestas. Los tamaños concretos y la política de retención deben definirse al diseñar migraciones.
 
@@ -22,8 +22,8 @@ Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuest
 
 ### `patient` — datos de contacto (RF-03/04/08/22/23)
 
-- `id uuid PK`; `full_name varchar NOT NULL`; `normalized_name varchar NOT NULL`; `phone varchar NOT NULL`; `email varchar?`; `birth_date date?` (obligatoria al registrarse por la web, V-02); `guardian_phone varchar?` (obligatorio si es menor de edad, V-02); `origin enum('web','dentist')`; `created_at timestamptz`; `updated_at timestamptz`; `updated_by uuid FK dentist_user?`.
-- `UNIQUE(normalized_name, phone)`; índice por `phone`, búsqueda indexada por nombre normalizado. Normalización y formato de celular deben ser deterministas. **El correo es obligatorio durante CU-01, opcional en CU-12** (V-03). Mismo celular con distinto nombre = pacientes distintos (V-02). La regla menor ⇒ `guardian_phone` se valida en aplicación con la fecha de La Paz; pendiente definir si el celular del tutor identifica al menor en CU-03.
+- `id uuid PK`; `full_name varchar NOT NULL`; `normalized_name varchar NOT NULL`; `phone varchar NOT NULL`; `email varchar?`; `birth_date date?` (obligatoria al registrarse por la web, V-02); `is_minor boolean DEFAULT false` (etiqueta de menor, V-18); `guardian_phone varchar?` (obligatorio si `is_minor`; identifica al menor en CU-03, V-18); `origin enum('web','dentist')`; `created_at timestamptz`; `updated_at timestamptz`; `updated_by uuid FK dentist_user?`.
+- `UNIQUE(normalized_name, phone)`; índice por `phone`, búsqueda indexada por nombre normalizado. Normalización y formato de celular deben ser deterministas. **El correo es obligatorio durante CU-01, opcional en CU-12** (V-03). Mismo celular con distinto nombre = pacientes distintos (V-02). `CHECK (NOT is_minor OR guardian_phone IS NOT NULL)`; `is_minor` se deriva de `birth_date` con la fecha de La Paz. La consulta pública de un menor usa nombre del menor + `guardian_phone` (V-18).
 
 ### `treatment` — catálogo vigente (RF-01/15)
 
@@ -33,24 +33,24 @@ Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuest
 ### `clinic_settings` — configuración única de la clínica (RF-07/15, V-06)
 
 - `id uuid PK` (una sola fila); `consultation_price_cents bigint NOT NULL` (30 Bs = `3000`); `deposit_cents bigint NOT NULL`; `currency char(3) NOT NULL DEFAULT 'BOB'`; `payment_qr_ref varchar?` (referencia a la imagen del QR vigente, nunca la imagen en Git); `whatsapp_phone varchar?`; `updated_at timestamptz`; `updated_by uuid FK dentist_user?`.
-- `CHECK deposit_cents BETWEEN 1000 AND 2000` (10–20 Bs) y `deposit_cents <= consultation_price_cents`. Cada cambio de anticipo o QR se audita. Saldo en clínica: PROPUESTA (V-06b), sin cobro en sistema.
+- `CHECK deposit_cents BETWEEN 1000 AND 2000` (10–20 Bs) y `deposit_cents <= consultation_price_cents`. Cada cambio de anticipo o QR se audita. El saldo se paga en el consultorio el día de la consulta (V-23), sin cobro en sistema.
 
 ### `availability_interval` — horario por fecha (RF-02/14)
 
 - `id uuid PK`; `service_date date NOT NULL`; `starts_local time NOT NULL`; `ends_local time NOT NULL`; `created_by uuid FK dentist_user`; `created_at timestamptz`; `updated_at timestamptz`.
-- `CHECK ends_local > starts_local`; al menos la duración vigente de consulta (90 o 45 min, PENDIENTE V-05b); prohibición de intervalos superpuestos por fecha; índice `service_date`. Validar al modificar que no excluya una cita confirmada. Si aparecen intervalos nocturnos, abrir ADR: v4.2 no los requiere.
+- `CHECK ends_local > starts_local`; al menos 45 min (una franja, V-20); prohibición de intervalos superpuestos por fecha; índice `service_date`. Validar al modificar que no excluya una cita confirmada. Si aparecen intervalos nocturnos, abrir ADR: v4.2 no los requiere.
 
 ### `appointment` — agenda y estado de vida (RF-02/04/05/06/16–20/26)
 
-- `id uuid PK`; `patient_id uuid FK patient NOT NULL`; `treatment_id uuid FK treatment NOT NULL`; `starts_at timestamptz NOT NULL`; `ends_at timestamptz NOT NULL`; `status appointment_status NOT NULL`; `deposit_cents bigint NOT NULL` (snapshot); `diagnosis text?`; `cost_cents bigint?`; `currency char(3) NOT NULL DEFAULT 'BOB'` (aplica a `deposit_cents` y `cost_cents`); `refunded enum('yes','no','not_applicable')?`; `cancel_reason text?`; `origin enum('web','dentist')`; `created_at timestamptz`; `updated_at timestamptz`; `completed_at timestamptz?`; `completed_by uuid FK dentist_user?`; `canceled_at timestamptz?`; `canceled_by uuid FK dentist_user?`.
-- `ends_at = starts_at + duración vigente` (90 o 45 min, PENDIENTE V-05b); inicios alineados a la grilla de **45 min** dentro del intervalo; `starts_at` desde el día siguiente en La Paz (V-05); costo no negativo, estado terminal inmutable. Indexar `(starts_at,status)` y `(patient_id,starts_at)`. `deposit_cents` es snapshot de `clinic_settings` al crear la cita y **no** se recalcula si el dentista cambia el anticipo.
-- **Integridad crítica:** impedir superposición entre citas que ocupan franja (`confirmada` y `completada`, V-09) por restricción transaccional en PostgreSQL (p. ej. índice GiST/exclusion constraint `tstzrange(starts_at,ends_at,'[)')` `WITH &&` `WHERE status IN ('confirmada','completada')` y extensión `btree_gist` si necesaria). Los literales del predicado deben coincidir exactamente con los valores almacenados del enum `appointment_status`. Validación UX previa **no sustituye** la restricción de BD.
+- `id uuid PK`; `patient_id uuid FK patient NOT NULL`; `treatment_id uuid FK treatment NOT NULL`; `starts_at timestamptz NOT NULL`; `ends_at timestamptz NOT NULL`; `status appointment_status NOT NULL`; `deposit_cents bigint NOT NULL` (snapshot); `diagnosis text?`; `cost_cents bigint?`; `currency char(3) NOT NULL DEFAULT 'BOB'` (aplica a `deposit_cents` y `cost_cents`); `refunded enum('yes','no','not_applicable')?` (el anticipo no se devuelve, V-15: no usar `yes` salvo nueva decisión); `cancel_reason text?`; `origin enum('web','dentist')`; `hold_expires_at timestamptz?` (reserva web: `created_at + 8 min`, V-21); `created_at timestamptz`; `updated_at timestamptz`; `completed_at timestamptz?`; `completed_by uuid FK dentist_user?`; `canceled_at timestamptz?`; `canceled_by uuid FK dentist_user?`.
+- `ends_at = starts_at + interval '45 minutes'` (franja fija, V-20); inicios alineados a la grilla de **45 min** dentro del intervalo; `starts_at` desde el día siguiente en La Paz (V-05); costo no negativo, estado terminal inmutable. Indexar `(starts_at,status)` y `(patient_id,starts_at)`. `deposit_cents` es snapshot de `clinic_settings` al crear la cita y **no** se recalcula si el dentista cambia el anticipo.
+- **Integridad crítica:** impedir superposición entre citas que ocupan franja (`por_pagar` vigente, `confirmada`, `completada` y `no_asistio`; V-09, V-21) por restricción transaccional en PostgreSQL (p. ej. índice GiST/exclusion constraint `tstzrange(starts_at,ends_at,'[)')` `WITH &&` `WHERE status IN ('por_pagar','confirmada','completada','no_asistio')` y extensión `btree_gist` si necesaria). Los literales del predicado deben coincidir exactamente con los valores almacenados del enum `appointment_status`. Validación UX previa **no sustituye** la restricción de BD. Como la restricción no puede depender de `now()`, la transacción que crea una reserva primero cancela las `por_pagar` vencidas (sin comprobante y `hold_expires_at < now()`) que choquen con la franja, y luego inserta; el job de caducidad hace lo mismo en segundo plano.
 - Contar 3 pendientes por paciente **transaccionalmente** al crear (evitar condición de carrera).
 
 ### `payment_proof` — anticipo QR fuera del sistema (RF-07/17/18)
 
 - `id uuid PK`; `appointment_id uuid FK appointment UNIQUE NOT NULL`; `receipt_number varchar UNIQUE NOT NULL`; `amount_cents bigint NOT NULL`; `currency char(3) NOT NULL DEFAULT 'BOB'`; `submitted_at timestamptz NOT NULL`; `confirmed_by uuid FK dentist_user?`; `confirmed_at timestamptz?`; `created_at timestamptz`.
-- No se integra con bancos; el dentista compara el número con su cuenta y confirma (V-07). La consulta sigue `por_pagar` mientras su comprobante no esté confirmado (no existe `pago_en_revision`). `amount_cents` = snapshot de `clinic_settings.deposit_cents`. Rechazo como estado/acción **prohibido** por v4.2. Confirmación y transición de `appointment` ocurren en una transacción.
+- No se integra con bancos; el dentista compara el número con su cuenta y confirma (V-07). La consulta sigue `por_pagar` mientras su comprobante no esté confirmado (no existe `pago_en_revision`). El comprobante debe registrarse antes de `hold_expires_at`; después de ese plazo la reserva ya no lo acepta (V-21). `amount_cents` = snapshot de `clinic_settings.deposit_cents`. Rechazo como estado/acción **prohibido** por v4.2. Confirmación y transición de `appointment` ocurren en una transacción.
 
 ### `clinical_record` — agregado clínico de paciente (RF-23–25)
 
@@ -114,7 +114,7 @@ erDiagram
 
 ## Enumeraciones (no ampliar sin validación)
 
-- `appointment_status`: `por_pagar`, `confirmada`, `completada`, `cancelada` (V-08; `no_asistio` es PROPUESTA, no crearlo sin aprobación) (API puede utilizar strings ingleses si establece mapeo explícito en `packages/contracts`, preservando semántica y trazabilidad).
+- `appointment_status`: `por_pagar`, `confirmada`, `completada`, `cancelada`, `no_asistio` (V-08, V-22; `no_asistio` solo desde `confirmada` con inicio ocurrido, terminal, anticipo retenido) (API puede utilizar strings ingleses si establece mapeo explícito en `packages/contracts`, preservando semántica y trazabilidad).
 - `patient_origin`: `web`, `dentist`.
 - `refund_status`: `yes`, `no`, `not_applicable`.
 - `notification_status`: `pending`, `sent`, `failed`.
@@ -122,13 +122,14 @@ erDiagram
 
 ## Flujos de integridad y seguridad
 
-1. **Confirmación:** transacción verifica estado `por_pagar` con comprobante registrado, y disponibilidad; cambia a `confirmada`; registra actor/fecha/auditoría. Una segunda confirmación solapada debe fallar inequívocamente, incluso bajo concurrencia.
-2. **Reprogramación:** misma transacción, validar intervalo, actualizar inicio y fin, registrar ambos valores y auditoría; estado terminal no modificable.
-3. **Cancelación:** cambio a `cancelada` y evento de correo en outbox **atómicos**; enviar en proceso separado. No borrar fila.
-4. **Caducidad:** job con marca de idempotencia cancela `por_pagar` de inicio pasado. PENDIENTE: si excluye las que ya tienen comprobante (riesgo 3 de `VALIDACION-REQUISITOS.md`).
-5. **Nueva versión clínica:** transacción inserta `clinical_version` n+1 y `tooth_state` asociado, sin actualizar versión previa.
-6. **Pacientes:** único por par normalizado+celular; mismo celular con distinto nombre es otro paciente (V-02), con advertencia informativa en UI administrativa; no deduplicar automáticamente familiares.
-7. **Control público:** consulta de citas minimiza exposición. Nombre+celular sin código aprobado por el cliente (ADR-003); riesgo residual aceptado.
+1. **Reserva:** transacción cancela reservas vencidas que choquen, inserta `por_pagar` con `hold_expires_at = now() + 8 min` y depende de la restricción de exclusión: una segunda reserva simultánea de la misma franja falla (V-21).
+2. **Confirmación:** transacción verifica estado `por_pagar` con comprobante registrado; cambia a `confirmada` (la franja ya estaba apartada); registra actor/fecha/auditoría. Una segunda confirmación solapada debe fallar inequívocamente, incluso bajo concurrencia.
+3. **Reprogramación:** misma transacción, validar intervalo, actualizar inicio y fin, registrar ambos valores y auditoría; estado terminal no modificable.
+4. **Cancelación:** cambio a `cancelada` y evento de correo en outbox **atómicos**; enviar en proceso separado. No borrar fila.
+5. **Caducidad:** job idempotente (cada minuto) cancela `por_pagar` **sin comprobante** con `hold_expires_at` vencido; las que tienen comprobante no se cancelan solas (V-17, V-21).
+6. **Nueva versión clínica:** transacción inserta `clinical_version` n+1 y `tooth_state` asociado, sin actualizar versión previa.
+7. **Pacientes:** único por par normalizado+celular; mismo celular con distinto nombre es otro paciente (V-02), con advertencia informativa en UI administrativa; no deduplicar automáticamente familiares.
+8. **Control público:** consulta de citas minimiza exposición. Nombre+celular sin código aprobado por el cliente (ADR-003); riesgo residual aceptado.
 
 ## Seeds propuestas
 

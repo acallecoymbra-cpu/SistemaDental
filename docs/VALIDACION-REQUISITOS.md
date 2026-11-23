@@ -1,17 +1,17 @@
 # Validación y trazabilidad — Renovando Sonrisas v4.2
 
-**Estado:** VALIDACIÓN PARCIAL (2026-11-20). El cliente respondió 13 preguntas (§6); las que no quedan ACEPTADAS están como PROPUESTA o PENDIENTE (§7).
+**Estado:** VALIDACIÓN PARCIAL (2026-11-20). El cliente respondió en tres rondas (§6, §6.2, §6.3); lo que no queda ACEPTADO está en §7.
 **Contrato de fuentes:** el documento v4.2 define el alcance funcional, **modificado** por las respuestas ACEPTADAS de §6, que prevalecen sobre el Word donde lo contradicen. El `BRIEF-SISTEMA-DENTAL.md` define la base técnica y el proceso. La demo Lúmina es material de referencia, no funcionalidad existente ni fuente de reglas de negocio.
 
 ## 1. Resumen de requisitos del cliente (vigente tras §6)
 
 - Actores: **un dentista** (único usuario autenticado interno) y **paciente sin cuenta**, identificado con nombre y celular sin código de verificación (V-01).
-- Inicios de consulta cada **45 minutos** (V-05). Duración de cada consulta: **PENDIENTE** entre 90 min (Word) y 45 min (V-05). Intervalos de atención configurables por fecha.
+- Inicios de consulta cada **45 minutos** (V-05); cada consulta dura **30 a 45 min** y el sistema reserva una franja fija de **45 min** (V-20). Intervalos de atención configurables por fecha.
 - Sin citas el mismo día: la fecha más cercana es el **día siguiente** (V-05).
 - Precio de consulta **30 Bs**; anticipo **único** para todas las consultas, configurable entre **10 y 20 Bs**, pagado por **QR** que el dentista entrega y actualiza (V-06). Saldo en clínica: PROPUESTA.
 - El paciente entrega **número de comprobante**; el dentista lo compara con su cuenta y confirma manualmente (V-07).
-- El horario solo se bloquea al confirmar el pago, nunca al crear la solicitud ni al reportar el comprobante.
-- **Cuatro estados** (V-08): `por_pagar` → `confirmada` → `completada`; `por_pagar` y `confirmada` pueden pasar a `cancelada`. Se elimina `pago_en_revision`. `no_asistio`: PROPUESTA.
+- **Reserva tipo butaca de cine (V-21):** al reservar, el horario queda apartado para ese paciente durante **8 minutos** como máximo para pagar y entregar el comprobante; nadie más puede reservarlo. Sin comprobante a los 8 min, la reserva se cancela y el horario se libera. Con comprobante, el horario sigue apartado hasta que el dentista confirme (V-17). Cambia la regla del Word, que solo bloqueaba al confirmar.
+- **Cinco estados** (V-08, V-22): `por_pagar` → `confirmada` → `completada` o `no_asistio`; `por_pagar` y `confirmada` pueden pasar a `cancelada`. Se elimina `pago_en_revision`. Saldo (30 Bs menos el anticipo) se paga en el consultorio el día de la consulta (V-23).
 - El anticipo **no se devuelve** al cancelar por pedido del paciente ni por inasistencia (V-04, V-08).
 - Historial inmutable por versiones: anamnesis, odontograma, índice dental y diagnóstico; únicamente el dentista lo escribe.
 - Correo obligatorio en cada cita pública; solo se envía al **eliminar/cancelar** una consulta (hasta 3 reintentos).
@@ -23,11 +23,11 @@
 | RF | Módulo | CU | Validación esencial |
 |---|---|---|---|
 | RF-01 | Tratamientos / portal | CU-01 | Solo tratamientos activos visibles |
-| RF-02 | Disponibilidad | CU-01, CU-10 | Inicio cada 45 min; desde el día siguiente; intervalo completo de la duración vigente sin choque confirmado |
+| RF-02 | Disponibilidad | CU-01, CU-10 | Inicio cada 45 min; franja de 45 min; desde el día siguiente; oculta franjas con reserva vigente, confirmada, completada o no asistida |
 | RF-03 | Agendamiento | CU-01 | Nombre, celular y email válidos; fecha de nacimiento al registrarse; celular de padre/madre si es menor |
-| RF-04 | Agendamiento | CU-01 | Crear `por_pagar`, horario no bloqueado, vincular paciente existente o nuevo |
+| RF-04 | Agendamiento | CU-01 | Crear `por_pagar` que aparta la franja 8 min; una segunda reserva simultánea de la misma franja falla; vincular paciente existente o nuevo |
 | RF-05 | Agendamiento | CU-01 | Máximo 3 consultas pendientes/paciente |
-| RF-06 | Agenda / expiración | CU-01, CU-02 | `por_pagar` vencidas pasan a `cancelada` (ver riesgo 3) |
+| RF-06 | Agenda / expiración | CU-01, CU-02 | `por_pagar` sin comprobante a los 8 min pasan a `cancelada`; con comprobante no vencen (V-17, V-21) |
 | RF-07 | Pago QR / comprobante | CU-02 | Referencia única ligada a su consulta; la consulta sigue `por_pagar` |
 | RF-08 | Consultas del paciente | CU-03 | Mostrar solo citas propias; nunca historia clínica |
 | RF-09 | Seguridad pública | CU-03 | 5 fallos en 10 min ⇒ bloqueo 15 min |
@@ -77,7 +77,7 @@ Todos los valores de esta tabla quedaron **aprobados por el cliente** el 2026-11
 | Aspecto | Requisito vigente | Demo Lúmina | Tratamiento recomendado |
 |---|---|---|---|
 | Dentistas | Uno solo | Preferencia de especialidad | Eliminar paso o simplificarlo, no crear roles extra |
-| Duración | 90 min (Word) o 45 min: PENDIENTE (V-05) | 30–90 según tratamiento | Duración uniforme configurable hasta que el cliente decida |
+| Duración | Franja fija de 45 min (V-20) | 30–90 según tratamiento | Franja uniforme de 45 min para todos |
 | Catálogo | 7 tratamientos de Renovando Sonrisas | Catálogo y motivos ficticios diferentes | Semilla del Word; no copiar lista de la demo |
 | Disponibilidad | Intervalos por fecha + inicios cada 45 min | Reglas deterministas sin backend | API real + verificación transaccional |
 | Reserva | `por_pagar` + QR y comprobante; el dentista confirma | Termina en solicitud no persistida | Nueva secuencia y persistencia real |
@@ -89,12 +89,12 @@ Todos los valores de esta tabla quedaron **aprobados por el cliente** el 2026-11
 ## 5. Riesgos y lagunas funcionales (actualizado tras §6)
 
 1. **Privacidad del paciente (riesgo aceptado):** el cliente aprobó nombre+celular sin código (V-01). Quien conozca ambos datos puede ver las consultas de otro, nunca su historia clínica. Mitigación vigente: rate limit RF-09, respuestas mínimas y errores genéricos.
-2. **Competencia por el mismo horario:** varias consultas `por_pagar` con comprobante pueden apuntar a la misma franja; solo la confirmación transaccional reserva. Sin `pago_en_revision`, falta definir qué pasa con el anticipo de quien pagó pero perdió la franja (¿se reprograma, se devuelve?). La regla «no se devuelve» de V-04/V-08 cubre cancelación del paciente e inasistencia, **no** este caso.
-3. **Vencimiento con comprobante entregado:** RF-06 cancela `por_pagar` vencidas, pero ahora una consulta con comprobante ya entregado también es `por_pagar`. Si el dentista no confirma antes del inicio, el job la cancelaría con el anticipo pagado. Definir si el job excluye consultas con comprobante.
-4. **Duración de consulta:** inicios cada 45 min con duración de 90 min producen solapes entre solicitudes contiguas; con 45 min no. Bloquea TASK-203 y la restricción de BD.
-5. **Menores de edad:** obligatorio el celular de padre/madre (V-02). Falta definir si ese número es el `phone` de identificación del menor o un campo aparte, y qué celular se usa para consultar citas.
-6. **Anticipos retenidos sin estado:** sin `no_asistio`, una inasistencia solo puede quedar `cancelada` o sin cerrar. PROPUESTA pendiente (V-08).
-7. **Definiciones odontológicas:** FDI y CPO-D siguen como supuesto; falta el catálogo de estados de pieza del dentista (V-10).
+2. **Competencia por el mismo horario (resuelto, V-21):** la franja se aparta al reservar, 8 min como máximo sin comprobante. Ya no pueden existir dos reservas vigentes sobre la misma franja, y la restricción de BD se aplica al crear la reserva, no solo al confirmar. Riesgo residual: 8 min puede ser poco para pagar por QR y escribir el comprobante; si el plazo vence, el paciente debe reservar de nuevo. Si ya pagó, el comprobante tardío se resuelve por WhatsApp (el anticipo nunca se devuelve, V-15).
+3. **Vencimiento con comprobante entregado (resuelto, V-17):** una `por_pagar` con comprobante **no** se cancela sola; el job de RF-06 solo cancela las que no tienen comprobante. La respuesta del cliente dice que «la funcionalidad va a detectar si el pago se realizó»: el sistema **no** detecta pagos (no hay integración bancaria, V-07); la verificación sigue siendo manual del dentista. Conviene aclarárselo.
+4. **Duración de consulta (resuelto, V-20):** franja fija de 45 min, igual a la grilla de inicios. Si una consulta real dura menos, el tiempo sobrante no se reasigna.
+5. **Menores de edad (resuelto, V-18):** el menor se marca con una etiqueta y se identifica con el celular de su apoderado, que es el que sirve para consultar sus citas.
+6. **Inasistencia (resuelto, V-22):** se agrega `no_asistio`, terminal, que registra el anticipo retenido.
+7. **Definiciones odontológicas:** FDI y CPO-D aceptados (V-19). Falta la lista concreta de estados de pieza que el consultorio ya usa en su registro.
 8. **Normativa:** retención clínica aprobada con asesoría local (V-12), pero aún sin plazo concreto definido; no inventarlo.
 9. **Repositorio (resuelto):** el cliente pidió GitHub como **espejo privado** (V-13); el propietario ratificó el 2026-11-20 que sigue **público** (ADR-008). Público **por el momento**; el cliente está informado. Todo lo versionado es público: nunca datos de pacientes, archivos clínicos, secretos ni el Word.
 10. **Migración:** se migran fichas de los últimos 6 meses (V-11); el resto se carga gradualmente. Responsable de exactitud y duplicados: PROPUESTA (el dentista al cargar cada ficha).
@@ -126,13 +126,38 @@ Todos los valores de esta tabla quedaron **aprobados por el cliente** el 2026-11
 | V-12 | ¿RNF y retención clínica con asesoría local? | Sí, todos. | ACEPTADA | §3, ADR-010 |
 | V-13 | ¿Web una clínica, «Renovando Sonrisas», PostgreSQL, Forgejo principal + GitHub espejo privado? | Sí, todo. | ACEPTADA salvo visibilidad: GitHub sigue público por decisión del propietario (riesgo 9) | ADR-001, ADR-004, ADR-008 |
 
+### 6.2 Segunda ronda (2026-11-20, WhatsApp)
+
+**Procedencia:** conversación de WhatsApp con el cliente, pegada por el propietario en sesión de Claude Code el 2026-11-23. Respuestas a las preguntas abiertas de la primera ronda.
+
+| # | Pregunta | Respuesta | Estado | Impacto |
+|---|---|---|---|---|
+| V-14 | ¿Se agrega el estado `no_asistio`? | Se podría agregar, pero el cliente tiene que consultarlo. | PENDIENTE | V-08b sigue abierta |
+| V-15 | ¿Se devuelve el anticipo en algún caso? | El anticipo no tiene devolución. Dudas o consultas del paciente, por el WhatsApp del consultorio. | ACEPTADA | `refunded` siempre `no`; sin flujo de devolución |
+| V-06b / V-04b | ¿Saldo en clínica? ¿Aviso al dentista sin correo? | Sin respuesta explícita. | PROPUESTA | Sin cambio |
+| V-16 | Dos anticipos por el mismo horario | «No sería posible»: si ya hay una cita reservada, el paciente no puede reservar encima. Si el sistema fallara, se vería en el horario y se habla con ambos por chat. | CONFLICTO con ADR-005 (riesgo 2) | Definir si `por_pagar` oculta la franja |
+| V-17 | ¿Se cancela sola una cita con comprobante no confirmado? | No se cancela; el dentista asume que ya pagó. | ACEPTADA (ver aclaración del riesgo 3) | Job RF-06 excluye `por_pagar` con comprobante |
+| V-18 | Celular para consultar citas de un menor | El celular de su apoderado; los menores llevan una etiqueta para comprobar ese número. | ACEPTADA | `patient.is_minor`; lookup por `guardian_phone` |
+| V-19 | FDI, CPO-D y estados de pieza | El consultorio tiene su sistema de registro (nomenclatura y estado de pieza) y eligió esos dos sistemas (FDI y CPO-D). | ACEPTADA (FDI/CPO-D); lista de estados PENDIENTE | ADR-009; TASK-504 sigue bloqueada |
+
+### 6.3 Tercera ronda (registrada 2026-11-23, WhatsApp)
+
+**Procedencia:** respuestas del cliente por WhatsApp al mensaje con 6 puntos, pegadas por el propietario en sesión de Claude Code el 2026-11-23.
+
+| # | Pregunta | Respuesta | Estado | Impacto |
+|---|---|---|---|---|
+| V-20 | ¿La consulta dura 45 o 90 min? | Entre 30 y 45 minutos. | ACEPTADA (franja fija de 45 min, interpretación) | Cierra V-05b; desbloquea TASK-203 |
+| V-21 | ¿Una reserva sin pagar oculta el horario? ¿Por cuánto tiempo? | Para reservar se paga el anticipo; confirmado el pago, el horario deja de estar disponible y otro que intente pagarlo al mismo tiempo no podrá. «Como reservar butacas en el cine», máximo 8 minutos. | ACEPTADA | Cierra V-16; `por_pagar` aparta la franja 8 min; supera la regla del Word |
+| V-22 | ¿Se agrega `no_asistio`? | Sí. | ACEPTADA | Cierra V-14/V-08b; enum de 5 estados |
+| V-23 | ¿El saldo se paga en el consultorio? | Sí, el día de la consulta. | ACEPTADA | Cierra V-06b; sin cobro de saldo en sistema |
+| V-24 | ¿Aviso al dentista si el paciente no tiene correo? | Sí. | ACEPTADA | Cierra V-04b; RF-21 |
+| V-25 | Lista de estados de pieza | La va a enviar. | PENDIENTE | TASK-504 sigue bloqueada |
+
 ## 7. Preguntas que siguen abiertas
 
-1. Duración de cada consulta: ¿45 o 90 minutos? (V-05b)
-2. Anticipo de quien pagó pero perdió la franja frente a otra confirmación: ¿se reprograma o se devuelve? (riesgo 2)
-3. ¿El vencimiento automático cancela una consulta `por_pagar` que ya tiene comprobante entregado? (riesgo 3)
-4. Menores: ¿el celular de padre/madre identifica al menor para consultar citas? (riesgo 5)
-5. ¿Se agrega `no_asistio`? ¿Se confirma el saldo en clínica y el aviso por WhatsApp sin correo? (V-08b, V-06b, V-04b)
-6. Estados de pieza del odontograma y confirmación de FDI/CPO-D (V-10).
+1. Lista de estados de pieza del consultorio (V-25). Al recibirla, no versionar la foto: solo la lista de estados.
+2. Confirmar con el cliente que el sistema reserva siempre 45 min por consulta, aunque algunas duren 30 (V-20).
+3. Confirmar que, si el paciente paga pero no entrega el comprobante en 8 min, la reserva se cae y lo resuelve por WhatsApp con el dentista (V-21, riesgo 2).
+4. Propuestas aún sin confirmar: revisión de fichas migradas por el dentista (V-11b).
 
 Hasta responderlas, las decisiones correspondientes se marcan `PENDIENTE` o `PROPUESTA` y no se consolidan como contrato.

@@ -13,7 +13,7 @@ Construir un sistema web para un único dentista que centralice pacientes, agend
 | Área | Alcance MVP | RF | CU |
 |---|---|---|---|
 | Catálogo y configuración | Siete tratamientos iniciales; activar, desactivar, editar. Consulta 30 Bs; anticipo único 10–20 Bs y QR vigente configurados por el dentista; copia del anticipo al reservar | 01, 15 | 01, 07 |
-| Horarios/disponibilidad | Intervalos por fecha, inicios cada 45 min, duración fija (90 o 45 min, pendiente), desde el día siguiente, protección contra solapes | 02, 14 | 01, 06, 10 |
+| Horarios/disponibilidad | Intervalos por fecha, inicios cada 45 min, franja fija de 45 min, desde el día siguiente, protección contra solapes desde la reserva | 02, 14 | 01, 06, 10 |
 | Agendamiento público | ¿Ya registrado? → datos existentes o registro con fecha de nacimiento (menor ⇒ celular de padre/madre); email obligatorio; máximo 3 pendientes; estado inicial `por_pagar` | 03–06 | 01 |
 | Pago externo | Mostrar QR, registrar referencia única; dentista confirma, no rechaza | 07, 17, 18 | 02, 09 |
 | Vista paciente | Consultar solo sus consultas y retomar pago; limitación de intentos | 08, 09 | 03 |
@@ -67,19 +67,18 @@ flowchart LR
 ```mermaid
 flowchart TD
  A[Seleccionar tratamiento/fecha/horario] --> B[Nombre/celular/email]
- B --> C[Crear cita POR_PAGAR - no bloquea]
+ B --> C[Crear cita POR_PAGAR - aparta la franja 8 min]
  C --> D[Mostrar QR externo]
  D --> E[Paciente ingresa comprobante único]
- E --> F[Sigue POR_PAGAR con comprobante - no bloquea]
+ E --> F[Sigue POR_PAGAR con comprobante - franja apartada]
  F --> G[Dentista compara número con su cuenta]
- G --> H{¿Horario sigue libre?}
- H -->|Sí, transacción atómica| I[CONFIRMADA - bloquea la franja]
- H -->|No| J[Sigue POR_PAGAR; acuerdo manual para mover o cancelar - anticipo pendiente de definir]
+ G --> I[CONFIRMADA - transacción atómica]
+ I --> N[NO_ASISTIO - anticipo retenido]
  I --> K[COMPLETADA con diagnóstico y costo - sigue ocupando la franja]
- C --> L[Cancelación por vencimiento si sigue POR_PAGAR - caso con comprobante pendiente]
+ C --> L[CANCELADA si no hay comprobante a los 8 min]
 ```
 
-El **servidor** calcula disponibilidad de intervalos `[inicio, fin)` y vuelve a validar en la transacción de confirmación. No confiar en UI ni en un `SELECT` previo como única protección.
+El **servidor** calcula disponibilidad de intervalos `[inicio, fin)` y la base de datos impide dos reservas vigentes sobre la misma franja en la transacción de reserva (V-21). No confiar en UI ni en un `SELECT` previo como única protección.
 
 ### 4.2 Historial clínico
 

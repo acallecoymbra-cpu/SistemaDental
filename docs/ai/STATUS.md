@@ -1,33 +1,32 @@
 # STATUS — Estado vigente
 
-**Fecha de captura:** 2026-11-20 17:34 (America/La_Paz, -04:00).
-**Procedencia:** inspección del repositorio local `C:\dev\sistema-dental` por Claude Code (`git status --short`, `git rev-parse HEAD`, `git branch -vv`, `git remote -v`, `git ls-remote origin main`). Forgejo: NO VERIFICADO (no configurado como remoto).
-**as_of_sha (HEAD local = origin/main observado):** `d49f6e037fa93a2f5df6b2001710fb1f866c33dd`.
+**Fecha de captura:** 2026-11-23 15:40 (America/La_Paz, -04:00).
+**Procedencia:** inspección del repositorio local `C:\dev\sistema-dental` por Claude Code (`git status --short`, `git log`, `git fetch`, `git status -sb`). Forgejo: NO VERIFICADO (no configurado como remoto).
+**as_of_sha (HEAD local = origin/main observado):** `725f0064e526101662eca2c35e732a0603ccbb8a`.
 
 ## Estado
 
-- `PLANNING / VALIDACIÓN PARCIAL`: el cliente respondió las preguntas de validación el 2026-11-20; respuestas registradas en `docs/VALIDACION-REQUISITOS.md` §6.
-- Remoto único `origin` → GitHub `acallecoymbra-cpu/SistemaDental`, rama `main`, visibilidad **PUBLIC** (observada el 2026-11-20). No hay remoto Forgejo.
-- Paquete de planificación versionado en `d49f6e0` (en `origin/main`).
-- Cambios de esta entrega, incluidos en el commit siguiente a `d49f6e0` (STAGE, COMMIT y PUSH autorizados el 2026-11-20): `docs/VALIDACION-REQUISITOS.md`, `docs/DATA-MODEL.md`, `docs/PLAN.md`, `docs/ai/{DECISIONS,MASTER,PROTOCOL,ROADMAP,STATUS,HANDOFF}.md`.
-- ADR aceptadas por el cliente: ADR-001 (PostgreSQL), ADR-003 (nombre + celular sin código), ADR-004 (web, una clínica), ADR-010 (RNF). ADR-005 parcialmente (cuatro estados, inicios 45 min, anticipo único). ADR-008: GitHub sigue **público**, ratificado por el propietario pese a V-13; Forgejo principal aceptado, sin configurar.
+- `PLANNING / VALIDACIÓN CASI COMPLETA`: tres rondas de respuestas del cliente registradas en `docs/VALIDACION-REQUISITOS.md` §6, §6.2 y §6.3.
+- Remoto único `origin` → GitHub `acallecoymbra-cpu/SistemaDental`, rama `main`, **pública** por el momento (ADR-008, cliente informado). No hay remoto Forgejo.
+- Primera ronda versionada en `725f006` (en `origin/main`).
+- Cambios de la segunda y tercera ronda, en el commit siguiente a `725f006` (STAGE, COMMIT y PUSH autorizados el 2026-11-23): `docs/VALIDACION-REQUISITOS.md`, `docs/DATA-MODEL.md`, `docs/PLAN.md`, `docs/ai/{DECISIONS,MASTER,PROTOCOL,ROADMAP,STATUS,HANDOFF}.md`.
+- ADR aceptadas: ADR-001, ADR-003 (incluye menores con celular del apoderado), ADR-004, ADR-010. ADR-005 aceptada (5 estados, franja de 45 min, reserva que aparta la franja 8 min, anticipo sin devolución, saldo en consultorio). ADR-009: FDI y CPO-D aceptados. ADR-008: público por el momento.
 - No existe monorepo ejecutable (`apps`, `packages`), backend ni persistencia del sistema real.
 - Tests: **NOT EXECUTED** (no hay código).
 
 ## Bloqueadores
 
-1. Duración de consulta 45 vs 90 min (V-05b): bloquea TASK-203 y la restricción de solapes.
-2. Resto de preguntas abiertas en `docs/VALIDACION-REQUISITOS.md` §7 (anticipo de quien pierde la franja, vencimiento con comprobante, celular del menor, `no_asistio`, estados del odontograma).
+1. Lista de estados de pieza del consultorio (V-25): bloquea TASK-504 (no bloquea el inicio del monorepo).
 
 ## Próxima acción recomendada
 
-Revisión del propietario de los cambios documentales; luego STAGE/COMMIT/PUSH con autorización separada para cada operación. Enviar al cliente las preguntas de §7. No iniciar TASK-002 sin cerrar la duración de consulta.
+STAGE/COMMIT/PUSH de las rondas 2 y 3 con autorización. Confirmar con el cliente los puntos 2 y 3 de `docs/VALIDACION-REQUISITOS.md` §7. Con eso, TASK-001 puede cerrarse salvo el odontograma y empezar TASK-002 (monorepo).
 
 ## Autorizaciones
 
 | Acción | Estado |
 |---|---|
-| STAGE | Autorizado por el propietario (2026-11-20) |
-| COMMIT | Autorizado por el propietario (2026-11-20) |
-| PUSH | Autorizado por el propietario (2026-11-20) |
+| STAGE | Autorizado por el propietario (2026-11-23) |
+| COMMIT | Autorizado por el propietario (2026-11-23) |
+| PUSH | Autorizado por el propietario (2026-11-23) |
 | DEPLOY | No autorizado |
