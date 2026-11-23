@@ -1,0 +1,15 @@
+{
+  "name": "@sistema-dental/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Configuración compartida: tsconfig base y ESLint",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint.base.mjs"
+  },
+  "dependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "typescript-eslint": "8.73.0"
+  }
+}

@@ -41,6 +41,7 @@
 - **Decision:** Node 24 LTS, pnpm/Turborepo, Next.js 15/React 19, NestJS 11, TypeORM 0.3, TS estricto, contracts/DTO compartidos, test unit/integration/E2E.
 - **Reasoning:** reutilizar patrones probados por DevSure.
 - **Consequences:** fijar versiones y verificar compatibilidad real en instalación. **Aprobar:** propietario.
+- **Versiones fijadas en TASK-002 (2026-11-23):** Node 24.22.3 (`engines` 24.x), pnpm 12.18.0, Turborepo 2.11.13, TypeScript 5.9.3, NestJS 11.2.11, Next.js 15.5.29, React 19.1.10, Jest 30.5.2 + ts-jest 29.4.15 + supertest 7.3.2, Vitest 5.1.1, ESLint 9.39.5 + typescript-eslint 8.73.0, Prettier 3.10.1. Desvíos frente a lo más reciente, para respetar el brief: NestJS 12 y TypeScript 7 existen pero no se usan; ESLint 9 figura como deprecado frente a 10, pero se mantiene por compatibilidad con Next 15; typescript-eslint 8.74.0 se descartó por la política de antigüedad mínima de pnpm (publicado el mismo día).
 
 ## ADR-007 — Memoria Git y responsabilidades de IA
 - **Status:** Propuesta tomada del brief.

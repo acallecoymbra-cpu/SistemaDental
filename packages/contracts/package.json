@@ -1,0 +1,24 @@
+{
+  "name": "@sistema-dental/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DTOs, tipos y enums compartidos entre api y web",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@sistema-dental/config": "workspace:*",
+    "@types/node": "24.19.2",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  }
+}

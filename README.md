@@ -2,7 +2,7 @@
 
 Sistema web de gestión para el consultorio dental Renovando Sonrisas.
 
-**Estado:** planificación (borrador, pendiente de aprobación). Todavía no hay código de implementación. Estado vigente en [`docs/ai/STATUS.md`](docs/ai/STATUS.md).
+**Estado:** fundaciones del monorepo creadas (TASK-002); todavía sin base de datos ni funcionalidad de negocio. Estado vigente en [`docs/ai/STATUS.md`](docs/ai/STATUS.md).
 
 ## Por dónde empezar
 
@@ -20,6 +20,21 @@ Sistema web de gestión para el consultorio dental Renovando Sonrisas.
 
 - **Alcance funcional:** documento de requerimientos `Doc_Dentista_v4.2.docx` (pendiente de validación; no versionado en este repositorio).
 - **Método y stack:** el brief, sujeto a los ADR de `docs/ai/DECISIONS.md`.
+
+## Desarrollo
+
+Requisitos: Node **24** (`.nvmrc`) y pnpm **12.18.0** (`packageManager`).
+
+```bash
+pnpm install
+pnpm build       # contracts, api y web
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm dev         # api en :3001 (GET /api/v1/health) y web en :3000
+```
+
+Estructura: `apps/api` (NestJS 11), `apps/web` (Next.js 15), `packages/contracts` (tipos y enums compartidos), `packages/config` (tsconfig y ESLint compartidos).
 
 ## Próximos pasos
 

@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  # Binario precompilado de jest-haste-map; no requiere compilar.
+  '@parcel/watcher': false

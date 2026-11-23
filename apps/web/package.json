@@ -1,0 +1,29 @@
+{
+  "name": "@sistema-dental/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web Next.js del sistema dental (portal público y panel del dentista)",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "dependencies": {
+    "@sistema-dental/contracts": "workspace:*",
+    "next": "15.5.29",
+    "react": "19.1.10",
+    "react-dom": "19.1.10"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "15.5.29",
+    "@sistema-dental/config": "workspace:*",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3"
+  }
+}
