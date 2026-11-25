@@ -28,7 +28,7 @@ Requisitos: Node **24** (`.nvmrc`), pnpm **12.18.0** (`packageManager`) y Docker
 
 ```bash
 pnpm install
-cp .env.example .env   # valores solo para desarrollo local
+cp .env.example .env   # valores solo para desarrollo local (incluye WEB_ORIGINS)
 pnpm db:up             # PostgreSQL 17 en Docker (bases sistema_dental y sistema_dental_test)
 pnpm build             # contracts, api y web
 pnpm db:migrate        # aplica las migraciones a la base de desarrollo

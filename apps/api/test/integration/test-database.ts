@@ -12,6 +12,8 @@ if (existsSync(rootEnv)) {
     process.env[key] ??= value;
   }
 }
+// Valores por defecto para las pruebas si el .env local aún no los tiene.
+process.env.WEB_ORIGINS ??= 'http://localhost:3000';
 
 /**
  * URL de la base de pruebas. Se exige que el nombre termine en "_test" para no

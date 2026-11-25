@@ -1,18 +1,21 @@
 import 'reflect-metadata';
-import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { testDatabaseUrl } from './test-database';
 
 describe('GET /api/v1/health (con PostgreSQL real)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
 
   beforeAll(async () => {
     process.env.DATABASE_URL = testDatabaseUrl();
     const { AppModule } = await import('../../src/app.module');
     const { configureApp } = await import('../../src/bootstrap');
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = configureApp(moduleRef.createNestApplication());
+    app = configureApp(moduleRef.createNestApplication<NestExpressApplication>(), {
+      allowedOrigins: ['http://localhost:3000'],
+      trustProxy: false,
+    });
     await app.init();
   });
 
@@ -26,6 +29,7 @@ describe('GET /api/v1/health (con PostgreSQL real)', () => {
   });
 
   it('no responde fuera del prefijo /api/v1', async () => {
-    await request(app.getHttpServer()).get('/health').expect(404);
+    const res = await request(app.getHttpServer()).get('/health').expect(404);
+    expect(res.body).toMatchObject({ statusCode: 404, error: 'Not Found' });
   });
 });

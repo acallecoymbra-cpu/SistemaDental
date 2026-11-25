@@ -70,6 +70,13 @@
 - **Reasoning:** disponibilidad y trazabilidad de datos de salud.
 - **Consequences:** costos/operación según proveedor de email, almacenamiento y VPS.
 
+## ADR-011 — Protección CSRF y forma de los errores de la API
+- **Status:** ACEPTADA por el propietario (2026-11-25); implementada en B-03.
+- **Context:** el panel del dentista usará sesión por cookie (ADR del brief); una cookie se envía sola desde cualquier sitio, lo que habilita CSRF. Los errores no deben filtrar detalles internos ni datos personales.
+- **Decision:** (1) toda petición que modifica datos (POST/PUT/PATCH/DELETE) debe traer `Origin` (o `Referer`) de la lista `WEB_ORIGINS`; si no, 403. Se complementa en B-04 con cookies `httpOnly`, `Secure` y `SameSite=Lax`. (2) CORS solo para `WEB_ORIGINS`, con credenciales. (3) Toda respuesta de error usa `ApiErrorResponse` (`statusCode`, `error`, `message`, `requestId`); los 5xx responden un mensaje genérico y el detalle va solo al log, sin cuerpo ni cabeceras. (4) DTOs con `ValidationPipe` en lista blanca estricta (`forbidNonWhitelisted`).
+- **Reasoning:** la verificación de origen es simple, no requiere token en cada formulario y los navegadores actuales siempre envían `Origin` en peticiones que modifican datos; el `requestId` permite al dentista reportar un error sin exponer nada.
+- **Consequences:** clientes sin navegador (scripts, Postman) deben enviar `Origin`; si en el futuro hay app móvil con token Bearer, se revisa esta ADR. Nuevas variables obligatorias: `WEB_ORIGINS` (y opcional `TRUST_PROXY`).
+
 ## Registro de cambios
 
 | Fecha | Estado | Autor | Resumen |
@@ -81,3 +88,4 @@
 | 2026-11-20 | Segunda ronda: ADR-003 menores, ADR-005 sin devolución y vencimiento, ADR-009 FDI/CPO-D; conflicto V-16 | Cliente por WhatsApp (registrado por Claude Code el 2026-11-23) | Ver `docs/VALIDACION-REQUISITOS.md` §6.2 |
 | 2026-11-23 | Tercera ronda: ADR-005 aceptada (5 estados, franja 45 min, reserva de 8 min, saldo en consultorio) | Cliente por WhatsApp (registrado por Claude Code) | Ver `docs/VALIDACION-REQUISITOS.md` §6.3 |
 | 2026-11-25 | Reparto de trabajo aprobado | Propietario (instrucción directa en sesión de Claude Code) | Base B-01…B-06 por propietario/Claude Code; tareas T-01…T-18 por la alumna; ver `docs/PLAN-IMPLEMENTACION.md` |
+| 2026-11-25 | ADR-011 aceptada | Propietario (instrucción directa en sesión de Claude Code) | CSRF por verificación de origen + forma única de errores de la API |
