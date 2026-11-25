@@ -28,7 +28,7 @@ Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuest
 ### `treatment` — catálogo vigente (RF-01/15)
 
 - `id uuid PK`; `name varchar UNIQUE NOT NULL`; `description text?`; `active boolean DEFAULT true`; `created_at timestamptz`; `updated_at timestamptz`.
-- Sin anticipo por tratamiento (V-06: el anticipo es único, ver `clinic_settings`). Eliminar es desactivar. Semilla de siete tratamientos exactos del Word.
+- Sin anticipo por tratamiento (V-06: el anticipo es único, ver `clinic_settings`). Eliminar es desactivar. Semilla de siete tratamientos exactos del Word. **Implementada** (B-05): `name varchar(80)` con `UNIQUE(lower(name))` y `CHECK` de no vacío, `description varchar(500)?`.
 
 ### `clinic_settings` — configuración única de la clínica (RF-07/15, V-06)
 

@@ -27,7 +27,7 @@
 
 ## Fase 2 — Catálogo + horarios
 
-- **TASK-201 · Tratamientos y configuración:** siete seeds aprobadas, lista pública activa, CRUD privado y `clinic_settings` (consulta 30 Bs, anticipo único, QR). **AC:** anticipo en rango 10–20 Bs; nombres únicos; desactivar no altera consultas; anticipo snapshot en la cita; cambios de anticipo/QR auditados.
+- **TASK-201 · Tratamientos y configuración:** (tratamientos VERIFIED localmente el 2026-11-25 como molde B-05; `clinic_settings` pendiente en T-01) siete seeds aprobadas, lista pública activa, CRUD privado y `clinic_settings` (consulta 30 Bs, anticipo único, QR). **AC:** anticipo en rango 10–20 Bs; nombres únicos; desactivar no altera consultas; anticipo snapshot en la cita; cambios de anticipo/QR auditados.
 - **TASK-202 · Intervalos de atención:** crear/editar/eliminar por día. **AC:** mínimo la duración vigente de consulta, no superponer intervalos, no reducir horario excluyendo confirmadas.
 - **TASK-203 · Disponibilidad real:** endpoint por fecha calcula franjas de 45 min y oculta las ocupadas por `por_pagar` vigente, `confirmada`, `completada` o `no_asistio`. **AC:** casos borde en fin de intervalo, reserva vencida liberada, rechazo del mismo día (mínimo el día siguiente) y huso Bolivia; tests de API.
 

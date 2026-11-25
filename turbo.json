@@ -23,6 +23,11 @@
       "dependsOn": ["^build"],
       "cache": false,
       "passThroughEnv": ["DATABASE_URL_TEST"]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build", "@sistema-dental/api#build"],
+      "cache": false,
+      "passThroughEnv": ["E2E_DATABASE_URL", "CI"]
     }
   }
 }

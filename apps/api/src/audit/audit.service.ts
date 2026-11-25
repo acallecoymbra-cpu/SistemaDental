@@ -33,7 +33,7 @@ export class AuditService {
     private readonly dataSource: DataSource,
     config: ConfigService,
   ) {
-    this.ipSalt = config.get<string>('AUDIT_IP_SALT') ?? 'sistema-dental-dev';
+    this.ipSalt = config.get<string>('AUDIT_IP_SALT') || 'sistema-dental-dev';
   }
 
   hashIp(ip: string | undefined): string | null {

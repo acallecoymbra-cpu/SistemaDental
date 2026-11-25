@@ -1,0 +1,295 @@
+/*
+ * Estilos base de Renovando Sonrisas. Los colores y medidas viven en variables (tokens):
+ * para cambiar la identidad visual se editan aquí, no en cada componente.
+ */
+:root {
+  --color-primary: #0f6e74;
+  --color-primary-hover: #0b575c;
+  --color-primary-soft: #e3f2f2;
+  --color-text: #1d2a2e;
+  --color-muted: #5b6b70;
+  --color-border: #d5dfe1;
+  --color-bg: #f6f9f9;
+  --color-surface: #ffffff;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdecea;
+  --color-success: #1e7a3c;
+  --color-success-soft: #e6f4ea;
+  --radius: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0 0 var(--space-4);
+}
+
+.container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+/* ---------- Portal público ---------- */
+.hero {
+  background: var(--color-primary);
+  color: #fff;
+  padding: var(--space-8) 0;
+}
+
+.hero p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.card-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+}
+
+.card h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.05rem;
+}
+
+/* ---------- Panel ---------- */
+.panel-header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.panel-header .container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.panel-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.panel-main {
+  padding: var(--space-6) 0 var(--space-8);
+}
+
+.auth-box {
+  max-width: 400px;
+  margin: var(--space-8) auto;
+}
+
+/* ---------- Formularios ---------- */
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.field input,
+.field textarea {
+  font: inherit;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #fff;
+  width: 100%;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible,
+.btn:focus-visible {
+  outline: 3px solid var(--color-primary-soft);
+  outline-offset: 1px;
+  border-color: var(--color-primary);
+}
+
+.field .hint {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  background: var(--color-primary);
+  color: #fff;
+  min-height: 40px;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Avisos ---------- */
+.alert {
+  border-radius: 8px;
+  padding: var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.alert-error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.alert-success {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.alert ul {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.alert small {
+  display: block;
+  margin-top: var(--space-1);
+  opacity: 0.8;
+}
+
+/* ---------- Tabla responsive: en celular cada fila se ve como tarjeta ---------- */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.badge-off {
+  background: #eceff0;
+  color: var(--color-muted);
+}
+
+.section {
+  margin-bottom: var(--space-8);
+}
+
+@media (max-width: 640px) {
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    display: block;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .table td {
+    display: block;
+    border: 0;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+  }
+}

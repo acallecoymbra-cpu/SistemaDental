@@ -15,8 +15,13 @@ export const envValidationSchema = Joi.object({
   TRUST_PROXY: Joi.boolean().default(false),
   /** Cookie de sesión solo por HTTPS. Por defecto: true en producción, false en desarrollo. */
   COOKIE_SECURE: Joi.boolean().optional(),
-  /** Clave para guardar la IP de la auditoría como HMAC. Obligatoria en producción. */
-  AUDIT_IP_SALT: Joi.string()
-    .min(32)
-    .when('NODE_ENV', { is: 'production', then: Joi.required(), otherwise: Joi.optional() }),
+  /**
+   * Clave para guardar la IP de la auditoría como HMAC. En producción es obligatoria
+   * (mínimo 32 caracteres); en desarrollo puede quedar vacía y se usa una clave fija.
+   */
+  AUDIT_IP_SALT: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(32).required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
 });

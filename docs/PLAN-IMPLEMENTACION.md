@@ -21,7 +21,8 @@ La alumna empieza cuando B-01…B-05 estén en `main`. Cada tarea indica su tare
 1. Instalar Node 24 (`nvm install 24` y `nvm use 24`), pnpm 12.18.0 y Docker Desktop (para PostgreSQL local).
 2. Clonar el repositorio y ejecutar `pnpm install`.
 3. Comprobar que todo pasa: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-4. Leer `AGENTS.md`, `docs/VALIDACION-REQUISITOS.md` §1 y la parte de `docs/DATA-MODEL.md` que toque la tarea.
+4. Leer `AGENTS.md`, `docs/GUIA-MOLDE-MODULO.md` (cómo copiar el molde), `docs/VALIDACION-REQUISITOS.md` §1 y la parte de `docs/DATA-MODEL.md` que toque la tarea.
+5. Instalar el navegador de las pruebas E2E: `pnpm --filter @sistema-dental/web exec playwright install chromium`.
 
 ### Flujo de cada tarea
 
@@ -55,8 +56,8 @@ La alumna empieza cuando B-01…B-05 estén en `main`. Cada tarea indica su tare
 | B-02 | PostgreSQL local con Docker Compose, TypeORM 0.3, migraciones, `.env.example`, pruebas de integración contra BD real. **Hecho** | TASK-003 |
 | B-03 | Seguridad base: validación de variables de entorno, DTOs validados, errores genéricos, CORS, cookies seguras y CSRF. **Hecho** (cookies de sesión en B-04) | TASK-004 |
 | B-04 | Login del dentista, sesiones, bloqueo por intentos, cierre por inactividad, y auditoría mínima. **Hecho** | TASK-101, TASK-102 |
-| B-05 | **Tarea modelo:** catálogo de tratamientos completo (migración, API, pantalla, pruebas) para que la alumna copie el patrón | TASK-201 (parte de tratamientos) |
-| B-06 | Playwright configurado con un E2E de ejemplo (login del dentista) | TASK-605 (parte inicial) |
+| B-05 | **Tarea modelo:** catálogo de tratamientos completo (migración, API, pantalla, pruebas) para que la alumna copie el patrón. Incluye la base web: login del dentista, panel, cambio de contraseña, cliente de API y estilos. **Hecho**; guía en `docs/GUIA-MOLDE-MODULO.md` | TASK-201 (parte de tratamientos) |
+| B-06 | Playwright configurado con E2E de login y de tratamientos, en escritorio y a 360 px, también en la CI. **Hecho** | TASK-605 (parte inicial) |
 
 ## 4. Tareas para la alumna
 
@@ -64,7 +65,7 @@ Tamaño: **S** pequeña, **M** mediana, **L** grande. 🔒 = lógica crítica (c
 
 ### Etapa 1 — Configuración y horarios
 
-**T-01 · Configuración de la clínica** · M · TASK-201 · depende de B-05
+**T-01 · Configuración de la clínica** · M · TASK-201 · depende de B-05 (copiar el molde `treatments`)
 - Objetivo: el dentista configura precio de consulta (30 Bs), anticipo único, QR de pago y número de WhatsApp.
 - Tabla: `clinic_settings` (una sola fila).
 - Criterios: anticipo solo entre 10 y 20 Bs y no mayor que la consulta; cada cambio queda en auditoría; la imagen del QR **no** se guarda en Git.

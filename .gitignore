@@ -38,3 +38,7 @@ Thumbs.db
 
 # Generado por Next.js
 next-env.d.ts
+
+# Resultados de Playwright
+apps/web/playwright-report/
+apps/web/test-results/

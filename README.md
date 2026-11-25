@@ -13,6 +13,7 @@ Sistema web de gestión para el consultorio dental Renovando Sonrisas.
 | [`docs/VALIDACION-REQUISITOS.md`](docs/VALIDACION-REQUISITOS.md) | Trazabilidad RF/RNF, discrepancias y preguntas al cliente |
 | [`docs/PLAN.md`](docs/PLAN.md) | Visión, alcance, arquitectura, pantallas y riesgos |
 | [`docs/PLAN-IMPLEMENTACION.md`](docs/PLAN-IMPLEMENTACION.md) | Tareas de implementación (base, tareas del equipo, cierre) y reglas de trabajo |
+| [`docs/GUIA-MOLDE-MODULO.md`](docs/GUIA-MOLDE-MODULO.md) | Cómo construir un módulo nuevo copiando el molde de tratamientos |
 | [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) | Modelo relacional propuesto y diagrama ER |
 | [`docs/BRIEF-SISTEMA-DENTAL.md`](docs/BRIEF-SISTEMA-DENTAL.md) | Brief técnico y de método (stack, reglas de BD, ciclo de memoria entre IAs) |
 | [`docs/referencia/lumina-dental/`](docs/referencia/lumina-dental/README.md) | Demo ficticia «Lúmina Dental» de DevSure: referencia visual y del flujo de cita, no funcionalidad real |
@@ -36,7 +37,9 @@ pnpm lint
 pnpm typecheck
 pnpm test              # pruebas unitarias (sin base de datos)
 pnpm test:integration  # pruebas contra PostgreSQL real (base *_test)
-pnpm dev               # api en :3001 (GET /api/v1/health) y web en :3000
+pnpm test:e2e          # Playwright: API y web reales (base *_e2e, puertos 3100/3101)
+                       # la primera vez: pnpm --filter @sistema-dental/web exec playwright install chromium
+pnpm dev               # api en :3001 y web en :3000 (portal en /, panel en /panel)
 
 # Crear la cuenta del dentista (una sola vez; muestra una contraseña temporal)
 pnpm --filter @sistema-dental/api dentist:create --username dra.ejemplo --name "Dra. Ejemplo"
