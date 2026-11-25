@@ -12,12 +12,12 @@ Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuest
 
 ### `dentist_user` — única cuenta administrativa (RF-13, RF-25, RF-27)
 
-- `id uuid PK`; `username varchar UNIQUE NOT NULL`; `password_hash text NOT NULL`; `full_name varchar NOT NULL`; `active boolean DEFAULT true`; `failed_attempts int DEFAULT 0`; `locked_until timestamptz?`; `created_at timestamptz`; `updated_at timestamptz`.
-- Índices: `UNIQUE(lower(username))`; nunca almacenar contraseña plana. Un solo usuario activo es regla de negocio, no un modelo multi-odontólogo implícito.
+- `id uuid PK`; `username varchar(64) NOT NULL`; `password_hash text NOT NULL` (Argon2id); `full_name varchar(120) NOT NULL`; `active boolean DEFAULT true`; `must_change_password boolean DEFAULT true`; `failed_attempts int DEFAULT 0`; `locked_until timestamptz?`; `created_at timestamptz`; `updated_at timestamptz`. **Implementada** en la migración `AuthAndAudit1764200000000` (B-04).
+- Índices: `UNIQUE(lower(username))` y `UNIQUE ((true)) WHERE active` (un solo dentista activo, garantizado por la BD); nunca almacenar contraseña plana.
 
 ### `auth_session` — sesión revocable del dentista (RF-13, RNF-05/06)
 
-- `id uuid PK`; `user_id uuid FK dentist_user`; `secret_hash text NOT NULL`; `created_at timestamptz`; `last_activity_at timestamptz`; `expires_at timestamptz`; `revoked_at timestamptz?`.
+- `id uuid PK`; `user_id uuid FK dentist_user`; `secret_hash char(64) NOT NULL` (SHA-256 del secreto); `created_at timestamptz`; `last_activity_at timestamptz`; `expires_at timestamptz` (máximo 12 h); `revoked_at timestamptz?`. **Implementada** (B-04).
 - Índice `(user_id, expires_at)`; secreto entregado solo en cookie segura. Aplicar inactividad de 30 min y CSRF.
 
 ### `patient` — datos de contacto (RF-03/04/08/22/23)
@@ -79,8 +79,8 @@ Los campos `?` son opcionales; `PK`/`FK`/`UNIQUE` indican restricciones propuest
 
 ### `audit_log` — auditoría transversal (RF-27, RNF-08)
 
-- `id uuid PK`; `actor_user_id uuid FK dentist_user?`; `actor_kind enum('dentist','system')`; `entity_type varchar`; `entity_id uuid`; `action varchar`; `before_json jsonb?`; `after_json jsonb?`; `occurred_at timestamptz`; `ip_hash varchar?`.
-- Solo INSERT; preservar confidencialidad: no registrar datos clínicos completos innecesarios ni credenciales. Auditoría de **lectura clínica** es exigencia del brief técnico y debe reflejarse en criterios de QA. Retención mínima de 2 años está **propuesta**, pendiente de validación.
+- `id uuid PK`; `actor_user_id uuid FK dentist_user?`; `actor_kind` (`dentist`, `system`, `anonymous` para intentos de login); `entity_type varchar`; `entity_id uuid?`; `action varchar`; `before_json jsonb?`; `after_json jsonb?`; `request_id varchar?`; `ip_hash char(64)?` (HMAC-SHA256 con `AUDIT_IP_SALT`); `occurred_at timestamptz`. **Implementada** (B-04).
+- Solo INSERT, garantizado por triggers que rechazan UPDATE, DELETE y TRUNCATE; preservar confidencialidad: no registrar datos clínicos completos innecesarios ni credenciales. Auditoría de **lectura clínica** es exigencia del brief técnico y debe reflejarse en criterios de QA. Retención mínima de 2 años está **propuesta**, pendiente de validación.
 
 ### `email_notification` — outbox/correo de cancelación (RF-21)
 

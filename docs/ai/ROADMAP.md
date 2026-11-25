@@ -22,8 +22,8 @@
 
 ## Fase 1 — Dentista
 
-- **TASK-101 · Login/Logout:** `dentist_user` + sesiones opacas, Argon2. **AC:** credenciales válidas inician sesión; 5 fallos bloquean 15 min; inactividad 30 min cierra; no registro público.
-- **TASK-102 · Auditoría mínima:** writes, intentos de cambios y **lecturas de datos clínicos** (brief §5). **AC:** cada confirmación/cancelación/edición guarda actor y fecha; cada apertura de ficha/historia clínica registra actor, entidad y fecha sin copiar contenido clínico; solo INSERT en log.
+- **TASK-101 · Login/Logout:** `dentist_user` + sesiones opacas, Argon2. **AC:** credenciales válidas inician sesión; 5 fallos bloquean 15 min; inactividad 30 min cierra; no registro público. **Estado:** VERIFIED localmente (2026-11-25, B-04): Argon2id, sesión opaca con hash en BD, cookie `httpOnly`/`SameSite=Lax`/`Path=/api`, guard global (todo protegido salvo `@Public`), contraseña temporal obligatoria de cambiar, CLI `dentist:create`, 17 pruebas de integración.
+- **TASK-102 · Auditoría mínima:** writes, intentos de cambios y **lecturas de datos clínicos** (brief §5). **AC:** cada confirmación/cancelación/edición guarda actor y fecha; cada apertura de ficha/historia clínica registra actor, entidad y fecha sin copiar contenido clínico; solo INSERT en log. **Estado:** base VERIFIED (2026-11-25, B-04): tabla `audit_log` con triggers que prohíben UPDATE/DELETE/TRUNCATE, `AuditService` y eventos de acceso. Los eventos de cada módulo (citas, fichas) se agregan en sus tareas.
 
 ## Fase 2 — Catálogo + horarios
 

@@ -13,4 +13,10 @@ export const envValidationSchema = Joi.object({
     .required(),
   /** true cuando la API corre detrás de Nginx (producción). */
   TRUST_PROXY: Joi.boolean().default(false),
+  /** Cookie de sesión solo por HTTPS. Por defecto: true en producción, false en desarrollo. */
+  COOKIE_SECURE: Joi.boolean().optional(),
+  /** Clave para guardar la IP de la auditoría como HMAC. Obligatoria en producción. */
+  AUDIT_IP_SALT: Joi.string()
+    .min(32)
+    .when('NODE_ENV', { is: 'production', then: Joi.required(), otherwise: Joi.optional() }),
 });

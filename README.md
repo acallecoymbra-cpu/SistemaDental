@@ -37,6 +37,9 @@ pnpm typecheck
 pnpm test              # pruebas unitarias (sin base de datos)
 pnpm test:integration  # pruebas contra PostgreSQL real (base *_test)
 pnpm dev               # api en :3001 (GET /api/v1/health) y web en :3000
+
+# Crear la cuenta del dentista (una sola vez; muestra una contraseña temporal)
+pnpm --filter @sistema-dental/api dentist:create --username dra.ejemplo --name "Dra. Ejemplo"
 ```
 
 La base de datos solo cambia por migraciones (`apps/api/src/database/migrations`, `synchronize: false`). Crear una nueva: `pnpm --filter @sistema-dental/api migration:create src/database/migrations/NombreDeLaMigracion`.

@@ -1,24 +1,26 @@
 # STATUS — Estado vigente
 
-**Fecha de captura:** 2026-11-25 11:47 (America/La_Paz, -04:00).
-**Procedencia:** inspección del repositorio local `C:\dev\sistema-dental` y de GitHub por Claude Code (`git status`, `git log`, `git ls-remote`, `gh run watch`, `gh api .../branches/main/protection`) y ejecución local de validaciones. Forgejo: NO VERIFICADO (no configurado como remoto).
-**as_of_sha (HEAD local = origin/main observado):** `12a81b093dce2941db5d6b25a4ca3fac32f23fc8`.
+**Fecha de captura:** 2026-11-25 12:11 (America/La_Paz, -04:00).
+**Procedencia:** inspección del repositorio local `C:\dev\sistema-dental` y de GitHub por Claude Code (`git status`, `git log`, `git ls-remote`, `gh run watch`) y ejecución local de validaciones. Forgejo: NO VERIFICADO (no configurado como remoto).
+**as_of_sha (HEAD local = origin/main observado):** `754d34481498f20ad168e89e02a1c123bda9bf6d`.
 
 ## Estado
 
-- `FOUNDATIONS`: B-01 (CI) y B-02 (PostgreSQL + migraciones) en `12a81b0`. La CI de ese commit pasó en GitHub (run `45647278367`: validación e integración en verde).
-- `main` **protegida** en GitHub (2026-11-25): PR obligatorio con 1 aprobación, checks `lint · typecheck · test · build` e `integración (PostgreSQL)` obligatorios y al día, historia lineal, sin force-push ni borrado, conversaciones resueltas. `enforce_admins` desactivado: el propietario puede saltarse las reglas.
-- B-03 (TASK-004, seguridad HTTP base) **VERIFIED localmente**; en el commit siguiente a `12a81b0` (push directo a `main` autorizado). ADR-011 ACEPTADA.
-- Colaboradora (alumna): pendiente; GitHub requiere su nombre de usuario.
+- `FOUNDATIONS`: B-01, B-02 (`12a81b0`) y B-03 (`754d344`) en `main`; CI de `754d344` en verde (run `45649314711`). ADR-011 aceptada.
+- `main` protegida en GitHub (PR + 1 aprobación + 2 checks; el propietario puede saltarse las reglas).
+- B-04 (TASK-101 login/sesiones + TASK-102 auditoría mínima) **VERIFIED localmente**, en el commit siguiente a `754d344` (push autorizado). ADR-012 ACEPTADA.
+- Colaboradora (alumna): pendiente; falta su usuario de GitHub.
 - Remoto único `origin` → GitHub `acallecoymbra-cpu/SistemaDental`, **público** por el momento (ADR-008).
 
-## B-03 entregado
+## B-04 entregado
 
-- `apps/api/src/bootstrap.ts`: `trust proxy` configurable, `x-powered-by` desactivado, `x-request-id`, helmet, CORS solo para `WEB_ORIGINS` con credenciales, `cookie-parser`, verificación de origen (CSRF) en POST/PUT/PATCH/DELETE, `ValidationPipe` en lista blanca estricta, filtro global de errores.
-- `apps/api/src/common/`: `security-options.ts`, `request-id.ts`, `origin-check.ts`, `all-exceptions.filter.ts` y pruebas.
-- `packages/contracts/src/errors.ts`: `ApiErrorResponse`.
-- Variables nuevas obligatorias: `WEB_ORIGINS`; opcional `TRUST_PROXY`. **`.env.example` no se actualizó**: los archivos `.env*` están bloqueados por los permisos de la sesión; debe agregarlas el propietario.
-- ADR-011 ACEPTADA por el propietario: estrategia CSRF por origen y forma única de errores.
+- Migración `AuthAndAudit1764200000000`: `dentist_user` (un solo activo por índice parcial), `auth_session`, `audit_log` con triggers que prohíben UPDATE/DELETE/TRUNCATE.
+- `apps/api/src/auth`: Argon2id (`@node-rs/argon2` 2.2.2), token opaco con hash SHA-256 en BD, cookie `sd_session` (`httpOnly`, `SameSite=Lax`, `Path=/api`, `Secure` en producción), guard global con `@Public()`, contraseña temporal obligatoria, bloqueo 5 fallos/15 min (429), inactividad 30 min, máximo 12 h.
+- Endpoints: `POST /api/v1/auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/change-password`. `/health` marcado `@Public()`.
+- `apps/api/src/audit`: `AuditService` (IP como HMAC con `AUDIT_IP_SALT`), eventos de acceso.
+- CLI `pnpm --filter @sistema-dental/api dentist:create --username … --name "…"`.
+- `packages/contracts/src/auth.ts`: constantes y tipos de acceso.
+- Variables nuevas opcionales: `COOKIE_SECURE`, `AUDIT_IP_SALT` (obligatoria en producción). Pendiente de B-03: `WEB_ORIGINS` y `TRUST_PROXY` en `.env.example` (archivos `.env*` bloqueados para Claude Code).
 
 ## Validaciones ejecutadas (2026-11-25, Windows 11, Node 24.22.3, pnpm 12.18.0, Docker 29.6.1)
 
@@ -26,27 +28,27 @@
 |---|---|
 | `prettier --check .` | PASS |
 | `pnpm lint` / `pnpm typecheck` / `pnpm build` | PASS |
-| `pnpm test` | PASS: api 18 (incluye 13 de seguridad HTTP), contracts 4, web 3 |
-| `pnpm test:integration` | PASS: 5 |
-| CI en GitHub para `12a81b0` | PASS (ambos trabajos) |
+| `pnpm test` | PASS: api 28, contracts 4, web 3 |
+| `pnpm test:integration` | PASS: 22 (17 de autenticación/auditoría, 3 de migraciones, 2 de health) |
+| CLI `dentist:create` contra `sistema_dental_test` | Crea con clave temporal y `must_change_password`; se niega con dentista activo o usuario repetido |
 
-No ejecutado: arranque manual de la API con el `.env` local (le falta `WEB_ORIGINS` hasta que el propietario lo agregue); E2E Playwright (B-06).
+No ejecutado: login manual contra la API con el `.env` local (requiere `WEB_ORIGINS`); E2E Playwright (B-06).
 
 ## Bloqueadores
 
 1. Lista de estados de pieza del consultorio (V-25): bloquea T-16 / TASK-504.
-2. Usuario de GitHub de la alumna: bloquea darle acceso.
+2. Usuario de GitHub de la alumna.
 
 ## Próxima acción recomendada
 
-Propietario agrega `WEB_ORIGINS=http://localhost:3000` y `TRUST_PROXY=false` a `.env.example` y `.env`; STAGE/COMMIT/PUSH de B-03 con autorización; luego B-04 (login del dentista, sesiones y auditoría mínima).
+B-05: el propietario decidió (2026-11-25) que nosotros hagamos el catálogo de tratamientos de punta a punta como molde para la alumna.
 
 ## Autorizaciones
 
 | Acción | Estado |
 |---|---|
-| STAGE | Autorizado: el propietario autorizó el push directo a `main` (2026-11-25), que incluye stage y commit |
-| COMMIT | Autorizado (mismo permiso, 2026-11-25) |
-| PUSH | Autorizado por el propietario, directo a `main` sin PR (2026-11-25) |
+| STAGE | Autorizado por el propietario (2026-11-25); hecho |
+| COMMIT | Autorizado: el propietario autorizó el push de B-04 (2026-11-25), que incluye el commit |
+| PUSH | Autorizado por el propietario, directo a `main` (2026-11-25) |
 | DEPLOY | No autorizado |
 | Agregar colaboradora | Pendiente: falta su usuario de GitHub |

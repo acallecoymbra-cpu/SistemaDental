@@ -54,7 +54,7 @@ La alumna empieza cuando B-01…B-05 estén en `main`. Cada tarea indica su tare
 | B-01 | CI en GitHub Actions: `lint`, `typecheck`, `test`, `build` en cada Pull Request; `main` protegida. **Hecho:** workflow `.github/workflows/ci.yml`; protección de `main` pendiente | — |
 | B-02 | PostgreSQL local con Docker Compose, TypeORM 0.3, migraciones, `.env.example`, pruebas de integración contra BD real. **Hecho** | TASK-003 |
 | B-03 | Seguridad base: validación de variables de entorno, DTOs validados, errores genéricos, CORS, cookies seguras y CSRF. **Hecho** (cookies de sesión en B-04) | TASK-004 |
-| B-04 | Login del dentista, sesiones, bloqueo por intentos, cierre por inactividad, y auditoría mínima | TASK-101, TASK-102 |
+| B-04 | Login del dentista, sesiones, bloqueo por intentos, cierre por inactividad, y auditoría mínima. **Hecho** | TASK-101, TASK-102 |
 | B-05 | **Tarea modelo:** catálogo de tratamientos completo (migración, API, pantalla, pruebas) para que la alumna copie el patrón | TASK-201 (parte de tratamientos) |
 | B-06 | Playwright configurado con un E2E de ejemplo (login del dentista) | TASK-605 (parte inicial) |
 

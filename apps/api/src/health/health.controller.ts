@@ -1,11 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import type { HealthResponse } from '@sistema-dental/contracts';
 import { DataSource } from 'typeorm';
+import { Public } from '../auth/auth.decorators';
 
 @Controller('health')
 export class HealthController {
   constructor(private readonly dataSource: DataSource) {}
 
+  @Public()
   @Get()
   async check(): Promise<HealthResponse> {
     let database: HealthResponse['database'] = 'up';

@@ -77,6 +77,13 @@
 - **Reasoning:** la verificación de origen es simple, no requiere token en cada formulario y los navegadores actuales siempre envían `Origin` en peticiones que modifican datos; el `requestId` permite al dentista reportar un error sin exponer nada.
 - **Consequences:** clientes sin navegador (scripts, Postman) deben enviar `Origin`; si en el futuro hay app móvil con token Bearer, se revisa esta ADR. Nuevas variables obligatorias: `WEB_ORIGINS` (y opcional `TRUST_PROXY`).
 
+## ADR-012 — Sesiones y acceso del dentista
+- **Status:** ACEPTADA por el propietario (2026-11-25), incluidos sesión máxima de 12 h y contraseña mínima de 12 caracteres; implementada en B-04.
+- **Context:** RF-13 fija 5 intentos ⇒ 15 min de bloqueo e inactividad de 30 min; el brief pide sesión opaca revocable, Argon2 y primer usuario por consola.
+- **Decision:** (1) contraseña con Argon2id (`@node-rs/argon2`, sin scripts de instalación); (2) token opaco `<id>.<secreto de 32 bytes>` en cookie `sd_session` `httpOnly`, `SameSite=Lax`, `Path=/api`, `Secure` en producción; en la BD solo el SHA-256 del secreto; (3) guard global: **toda ruta exige sesión** salvo `@Public()`; (4) inactividad 30 min y **duración máxima de 12 h** (valor propuesto, no figura en los requisitos); (5) tras 5 fallos, 429 por 15 min aunque la clave sea correcta; usuario inexistente y clave incorrecta dan el mismo 401 y el mismo tiempo de respuesta; (6) contraseña mínima de **12 caracteres** (propuesto); (7) el primer dentista se crea con `pnpm --filter @sistema-dental/api dentist:create` con clave temporal que debe cambiarse; al cambiarla se cierran las demás sesiones; (8) la BD garantiza un solo dentista activo.
+- **Reasoning:** deny-by-default evita olvidar proteger un endpoint; guardar solo el hash del secreto impide reutilizar sesiones si se filtra la tabla.
+- **Consequences:** nuevas variables opcionales `COOKIE_SECURE` y `AUDIT_IP_SALT` (obligatoria en producción). Los valores 12 h y 12 caracteres deben confirmarse.
+
 ## Registro de cambios
 
 | Fecha | Estado | Autor | Resumen |
@@ -89,3 +96,4 @@
 | 2026-11-23 | Tercera ronda: ADR-005 aceptada (5 estados, franja 45 min, reserva de 8 min, saldo en consultorio) | Cliente por WhatsApp (registrado por Claude Code) | Ver `docs/VALIDACION-REQUISITOS.md` §6.3 |
 | 2026-11-25 | Reparto de trabajo aprobado | Propietario (instrucción directa en sesión de Claude Code) | Base B-01…B-06 por propietario/Claude Code; tareas T-01…T-18 por la alumna; ver `docs/PLAN-IMPLEMENTACION.md` |
 | 2026-11-25 | ADR-011 aceptada | Propietario (instrucción directa en sesión de Claude Code) | CSRF por verificación de origen + forma única de errores de la API |
+| 2026-11-25 | ADR-012 aceptada | Propietario (instrucción directa en sesión de Claude Code) | Sesiones del dentista: Argon2id, cookie opaca, deny-by-default, 12 h máximo, contraseña de 12 caracteres |
