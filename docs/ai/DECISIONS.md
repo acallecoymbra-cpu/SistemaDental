@@ -9,6 +9,7 @@
 - **Reasoning:** transacciones y restricciones de exclusión robustas para franjas concurrentes.
 - **Consequences:** operar PostgreSQL/backup y test de integración real; no asumir servicios existentes.
 - **Affected:** API, DB, CI, operaciones. **Aprobar:** propietario.
+- **Implementación (B-02, 2026-11-25):** PostgreSQL 17 (`postgres:17-bookworm`) en Docker Compose para desarrollo y como servicio en la CI; TypeORM 0.3.31 + `pg` 8.23.1; tabla de control `schema_migrations`; conexión en UTC; extensión `btree_gist` en la primera migración.
 
 ## ADR-002 — Identificadores UUID y valores monetarios
 - **Status:** Propuesta; **Date:** 2026-11-20.
@@ -79,3 +80,4 @@
 | 2026-11-20 | ADR-008 visibilidad ratificada | Propietario (instrucción directa en sesión de Claude Code) | GitHub sigue **público** por el momento pese a V-13 («espejo privado»); el cliente está informado |
 | 2026-11-20 | Segunda ronda: ADR-003 menores, ADR-005 sin devolución y vencimiento, ADR-009 FDI/CPO-D; conflicto V-16 | Cliente por WhatsApp (registrado por Claude Code el 2026-11-23) | Ver `docs/VALIDACION-REQUISITOS.md` §6.2 |
 | 2026-11-23 | Tercera ronda: ADR-005 aceptada (5 estados, franja 45 min, reserva de 8 min, saldo en consultorio) | Cliente por WhatsApp (registrado por Claude Code) | Ver `docs/VALIDACION-REQUISITOS.md` §6.3 |
+| 2026-11-25 | Reparto de trabajo aprobado | Propietario (instrucción directa en sesión de Claude Code) | Base B-01…B-06 por propietario/Claude Code; tareas T-01…T-18 por la alumna; ver `docs/PLAN-IMPLEMENTACION.md` |

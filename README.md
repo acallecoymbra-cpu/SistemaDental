@@ -12,6 +12,7 @@ Sistema web de gestión para el consultorio dental Renovando Sonrisas.
 | [`docs/ai/`](docs/ai/) | Memoria versionada: PROTOCOL, MASTER, STATUS, HANDOFF, ROADMAP, DECISIONS |
 | [`docs/VALIDACION-REQUISITOS.md`](docs/VALIDACION-REQUISITOS.md) | Trazabilidad RF/RNF, discrepancias y preguntas al cliente |
 | [`docs/PLAN.md`](docs/PLAN.md) | Visión, alcance, arquitectura, pantallas y riesgos |
+| [`docs/PLAN-IMPLEMENTACION.md`](docs/PLAN-IMPLEMENTACION.md) | Tareas de implementación (base, tareas del equipo, cierre) y reglas de trabajo |
 | [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) | Modelo relacional propuesto y diagrama ER |
 | [`docs/BRIEF-SISTEMA-DENTAL.md`](docs/BRIEF-SISTEMA-DENTAL.md) | Brief técnico y de método (stack, reglas de BD, ciclo de memoria entre IAs) |
 | [`docs/referencia/lumina-dental/`](docs/referencia/lumina-dental/README.md) | Demo ficticia «Lúmina Dental» de DevSure: referencia visual y del flujo de cita, no funcionalidad real |
@@ -23,16 +24,22 @@ Sistema web de gestión para el consultorio dental Renovando Sonrisas.
 
 ## Desarrollo
 
-Requisitos: Node **24** (`.nvmrc`) y pnpm **12.18.0** (`packageManager`).
+Requisitos: Node **24** (`.nvmrc`), pnpm **12.18.0** (`packageManager`) y Docker Desktop.
 
 ```bash
 pnpm install
-pnpm build       # contracts, api y web
+cp .env.example .env   # valores solo para desarrollo local
+pnpm db:up             # PostgreSQL 17 en Docker (bases sistema_dental y sistema_dental_test)
+pnpm build             # contracts, api y web
+pnpm db:migrate        # aplica las migraciones a la base de desarrollo
 pnpm lint
 pnpm typecheck
-pnpm test
-pnpm dev         # api en :3001 (GET /api/v1/health) y web en :3000
+pnpm test              # pruebas unitarias (sin base de datos)
+pnpm test:integration  # pruebas contra PostgreSQL real (base *_test)
+pnpm dev               # api en :3001 (GET /api/v1/health) y web en :3000
 ```
+
+La base de datos solo cambia por migraciones (`apps/api/src/database/migrations`, `synchronize: false`). Crear una nueva: `pnpm --filter @sistema-dental/api migration:create src/database/migrations/NombreDeLaMigracion`.
 
 Estructura: `apps/api` (NestJS 11), `apps/web` (Next.js 15), `packages/contracts` (tipos y enums compartidos), `packages/config` (tsconfig y ESLint compartidos).
 

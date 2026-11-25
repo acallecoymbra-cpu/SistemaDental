@@ -1,7 +1,8 @@
+/** Pruebas unitarias: no necesitan base de datos. */
 /** @type {import('jest').Config} */
 module.exports = {
   testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/test'],
-  testMatch: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/*.spec.ts'],
   transform: { '^.+[.]ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }] },
 };

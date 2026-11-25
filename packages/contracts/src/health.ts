@@ -2,5 +2,6 @@
 export interface HealthResponse {
   status: 'ok';
   service: 'api';
+  database: 'up' | 'down';
   time: string;
 }
