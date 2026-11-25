@@ -18,11 +18,10 @@ La alumna empieza cuando B-01…B-05 estén en `main`. Cada tarea indica su tare
 
 ### Preparar el equipo
 
-1. Instalar Node 24 (`nvm install 24` y `nvm use 24`), pnpm 12.18.0 y Docker Desktop (para PostgreSQL local).
-2. Clonar el repositorio y ejecutar `pnpm install`.
-3. Comprobar que todo pasa: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-4. Leer `AGENTS.md`, `docs/GUIA-MOLDE-MODULO.md` (cómo copiar el molde), `docs/VALIDACION-REQUISITOS.md` §1 y la parte de `docs/DATA-MODEL.md` que toque la tarea.
-5. Instalar el navegador de las pruebas E2E: `pnpm --filter @sistema-dental/web exec playwright install chromium`.
+1. Seguir **«Levantar el proyecto por primera vez»** del [`README.md`](../README.md): requisitos, `.env`, base de datos, migraciones, cuenta del dentista y `pnpm dev`.
+2. Instalar el navegador de las pruebas E2E: `pnpm --filter @sistema-dental/web exec playwright install chromium`.
+3. Comprobar que todo pasa con los comandos de «Pruebas y validaciones» del README.
+4. Leer `docs/GUIA-MOLDE-MODULO.md` (cómo copiar el molde), `AGENTS.md`, `docs/VALIDACION-REQUISITOS.md` §1 y la parte de `docs/DATA-MODEL.md` que toque la tarea.
 
 ### Flujo de cada tarea
 

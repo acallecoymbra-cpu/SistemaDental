@@ -1,32 +1,33 @@
 # HANDOFF — continuidad
 
-**as_of_sha:** `53d5812a99c4eb09d4da2b9437a04f10c2021fab` · **Fecha:** 2026-11-25 13:58 (America/La_Paz) · **Procedencia:** Claude Code, repositorio local y GitHub verificados; validaciones ejecutadas localmente.
+**as_of_sha:** `380478248a5d9afb1bd735a68592a1ee60174774` · **Fecha:** 2026-11-25 14:15 (America/La_Paz) · **Procedencia:** Claude Code, repositorio local y GitHub verificados; validaciones ejecutadas localmente y en la CI.
 
 ## Resumen de continuidad (≤25 líneas)
 
 - Proyecto: Renovando Sonrisas / Sistema Dental.
-- Estado: base B-01…B-04 en `main` (`53d5812`, CI verde, `main` protegida). B-05 (molde de tratamientos) y B-06 (Playwright) verificadas localmente; en el commit siguiente a `53d5812`.
-- Reparto aprobado: base B-01…B-06 por propietario/Claude Code; tareas T-01…T-18 por la alumna (`docs/PLAN-IMPLEMENTACION.md`). Guía para copiar el molde: `docs/GUIA-MOLDE-MODULO.md`.
+- Estado: **base B-01…B-06 terminada** en `main` (`3804782`), CI verde con 3 trabajos, `main` protegida con 3 checks obligatorios.
+- Reparto aprobado: tareas T-01…T-18 por la alumna (`docs/PLAN-IMPLEMENTACION.md`), copiando el molde de tratamientos (`docs/GUIA-MOLDE-MODULO.md`). Cierre C-01…C-04 por el propietario.
 - Requisitos: Word v4.2 modificado por las respuestas del cliente (`docs/VALIDACION-REQUISITOS.md` §6–§6.3).
 - Validaciones: ver `STATUS.md`.
-- B-05/B-06: STAGE, COMMIT y PUSH directo a `main` autorizados; check E2E obligatorio autorizado. DEPLOY: sin autorización.
+- README reescrito como guía paso a paso para levantar el proyecto (para la alumna); `.env.example` con las variables nuevas. Push autorizado. DEPLOY: sin autorización.
 
-## Última entrega — B-05 y B-06 (2026-11-25)
+## Última sesión (2026-11-25)
 
-- El propietario decidió que el catálogo de tratamientos lo hiciéramos completo como molde para la alumna (en vez de dejarlo como su primera tarea).
-- Detalle de archivos y pruebas en `STATUS.md`.
-- Decisiones técnicas de la web: el navegador llama a `/api/*` en el mismo origen y Next lo reenvía a la API (`next.config.ts` → `API_URL`); la protección de páginas del panel es en el cliente (`SessionProvider`), la seguridad real sigue en la API.
-- E2E: `pnpm test:e2e` ejecuta `e2e/prepare-db.mts` (crea y migra `sistema_dental_e2e`, crea `dra.e2e`) y luego Playwright con API en `:3101` y `next dev` en `:3100`.
+1. B-01…B-06 versionadas y subidas a `main` con autorización del propietario (commits en `STATUS.md`).
+2. Protección de `main` creada y luego ampliada con `e2e (Playwright)`.
+3. Corrección: `AUDIT_IP_SALT` vacía ya no impide arrancar fuera de producción.
+4. `.env` local del propietario verificado de forma indirecta (ver `STATUS.md`).
+5. Guía local del propietario: `C:\Users\aliva\Documents\Claude-Docs\SistemaDental\Guia-monorepo-desde-cero.md` (secciones 0–20).
 
 ## Notas de entorno
 
 - Node 20 es el global (nvm-windows); las validaciones usan Node 24.22.3 anteponiendo su carpeta al `PATH`. A mano: `nvm use 24`.
-- El contenedor `sistema-dental-postgres` sigue corriendo (`pnpm db:down` lo detiene). Bases: `sistema_dental`, `sistema_dental_test`, `sistema_dental_e2e`.
+- Docker Desktop puede cerrarse; antes de trabajar: abrirlo y `pnpm db:up`. Bases: `sistema_dental`, `sistema_dental_test`, `sistema_dental_e2e`.
 - Los archivos `.env*` están bloqueados para Claude Code: las variables nuevas las agrega el propietario.
+- El correo de la alumna no se guarda en el repositorio (público).
 
 ## Punto exacto de reanudación
 
-1. Re-verificar Git (no asumir que sigue en `53d5812`).
-2. Comprobar los 3 trabajos de la CI del push de B-05/B-06.
-3. Confirmar que `e2e (Playwright)` quedó como check obligatorio de `main` (autorizado).
-4. Invitar a la alumna cuando el propietario entregue su usuario de GitHub; ella empieza por T-01 copiando el molde.
+1. Re-verificar Git (no asumir que sigue en `3804782`).
+2. Invitar a la alumna (`gh api -X PUT repos/acallecoymbra-cpu/SistemaDental/collaborators/<usuario> -f permission=push`) cuando el propietario dé su usuario.
+3. Revisar los Pull Requests de T-01 en adelante contra `docs/GUIA-MOLDE-MODULO.md` y la tarjeta de cada tarea.
