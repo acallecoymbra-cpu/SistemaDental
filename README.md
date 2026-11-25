@@ -144,6 +144,8 @@ pnpm --filter @sistema-dental/api migration:revert   # deshacer la última (solo
 
 | Síntoma | Solución |
 |---|---|
+| `Command "db:up" not found`, `Command "build" not found` o `ERR_PNPM_WORKSPACE_WALK_ERROR` | Estás fuera del proyecto. Entra primero a la carpeta raíz: `cd C:\dev\sistema-dental` |
+| `EADDRINUSE: address already in use :::3000` (o `:::3001`) | Otro programa usa ese puerto. Búscalo en PowerShell con `Get-NetTCPConnection -LocalPort 3000 -State Listen` (o `docker ps` si es un contenedor) y detenlo |
 | `failed to connect to the docker API` | Abre Docker Desktop, espera a que diga que está listo y repite `pnpm db:up` |
 | La API dice `Unable to connect to the database` | Docker Desktop cerrado o base apagada: `pnpm db:up` |
 | `Config validation error: "WEB_ORIGINS" is required` (u otra variable) | Falta en tu `.env`: compáralo con `.env.example` |

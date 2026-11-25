@@ -26,7 +26,9 @@
 
 - `.env` local: verificado de forma indirecta (Claude Code no puede leer `.env*`). La API arranca; health `database: up`; login con `Origin: http://localhost:3000` → 401 (origen aceptado); otro origen → 403; CORS devuelve `http://localhost:3000`.
 - `.env.example`: el propietario agregó las variables nuevas y confirmó que no contiene secretos reales (Claude Code no puede leerlo); se versiona en el commit siguiente a `3804782`.
-- Base `sistema_dental` migrada hasta `CreateTreatments1764300000000`; sin dentista creado.
+- Base `sistema_dental` migrada hasta `CreateTreatments1764300000000`. El propietario creó su dentista de desarrollo y probó `pnpm dev` con éxito (2026-11-25).
+- Corrección (commit siguiente a `b372b6f`): el script `dev` de la API solo compilaba y no arrancaba el servidor; ahora usa `nest start --watch` (`@nestjs/cli` 11.0.24, `nest-cli.json`). Verificado: arranca (health 200) y se reinicia al cambiar un archivo.
+- El puerto 3000 lo ocupaba el contenedor ajeno `open-webui-old`; el propietario lo liberó. README: nuevas filas en «Problemas frecuentes» (carpeta equivocada y puerto ocupado).
 
 ## Validaciones ejecutadas (2026-11-25, Windows 11, Node 24.22.3, pnpm 12.18.0, Docker 29.6.1)
 
@@ -52,6 +54,6 @@ Invitar a la alumna cuando haya usuario; ella empieza por T-01 (configuración d
 
 | Acción | Estado |
 |---|---|
-| PUSH de `STATUS.md`, `HANDOFF.md`, `.env.example`, `README.md` y `PLAN-IMPLEMENTACION.md` | Autorizado por el propietario (2026-11-25), incluye stage y commit |
+| PUSH de la corrección de `pnpm dev` y del README | Autorizado por el propietario (2026-11-25), incluye stage y commit |
 | DEPLOY | No autorizado |
 | Agregar colaboradora | Pendiente: falta su usuario de GitHub |

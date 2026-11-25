@@ -17,7 +17,8 @@
 2. Protección de `main` creada y luego ampliada con `e2e (Playwright)`.
 3. Corrección: `AUDIT_IP_SALT` vacía ya no impide arrancar fuera de producción.
 4. `.env` local del propietario verificado de forma indirecta (ver `STATUS.md`).
-5. Guía local del propietario: `C:\Users\aliva\Documents\Claude-Docs\SistemaDental\Guia-monorepo-desde-cero.md` (secciones 0–20).
+5. `pnpm dev` corregido: la API ahora arranca con `nest start --watch`; probado por el propietario.
+6. Guía local del propietario: `C:\Users\aliva\Documents\Claude-Docs\SistemaDental\Guia-monorepo-desde-cero.md` (secciones 0–20).
 
 ## Notas de entorno
 
