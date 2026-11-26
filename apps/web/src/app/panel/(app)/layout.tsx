@@ -18,7 +18,11 @@ function PanelShell({ children }: { children: ReactNode }) {
         <div className="container">
           <strong>Renovando Sonrisas</strong>
           <nav className="panel-nav" aria-label="Menú del panel">
+            <Link href="/panel/agenda">Agenda</Link>
+            <Link href="/panel/pacientes">Pacientes</Link>
             <Link href="/panel/tratamientos">Tratamientos</Link>
+            <Link href="/panel/horarios">Horarios</Link>
+            <Link href="/panel/configuracion">Configuración</Link>
             <Link href="/panel/cambiar-clave">Cambiar contraseña</Link>
             <span className="muted">{user.fullName}</span>
             <button className="btn btn-secondary" type="button" onClick={() => void logout()}>
