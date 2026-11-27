@@ -5,11 +5,11 @@
 
 ## Endpoints
 
-| Método y ruta | Acceso | Respuesta |
-|---|---|---|
-| `GET /api/v1/treatments` | Público | `PublicTreatment[]`: solo activos, ordenados por nombre |
-| `GET /api/v1/admin/treatments` | Dentista | `AdminTreatment[]`: todos, activos primero |
-| `POST /api/v1/admin/treatments` | Dentista | `AdminTreatment` (201) |
+| Método y ruta                        | Acceso   | Respuesta                                                |
+| ------------------------------------ | -------- | -------------------------------------------------------- |
+| `GET /api/v1/treatments`             | Público  | `PublicTreatment[]`: solo activos, ordenados por nombre  |
+| `GET /api/v1/admin/treatments`       | Dentista | `AdminTreatment[]`: todos, activos primero               |
+| `POST /api/v1/admin/treatments`      | Dentista | `AdminTreatment` (201)                                   |
 | `PATCH /api/v1/admin/treatments/:id` | Dentista | `AdminTreatment`; acepta `name`, `description`, `active` |
 
 ## Reglas

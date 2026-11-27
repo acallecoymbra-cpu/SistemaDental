@@ -134,6 +134,17 @@ describe('autenticación del dentista (B-04, PostgreSQL real)', () => {
       expect(a.body.message).toBe('Usuario o contraseña incorrectos.');
     });
 
+    it('con campos vacíos responde 400 con mensajes en español', async () => {
+      const res = await login('', '').expect(400);
+      const messages: string[] = Array.isArray(res.body.message)
+        ? res.body.message
+        : [res.body.message];
+      expect(messages).toEqual(
+        expect.arrayContaining(['Escribe tu usuario.', 'Escribe tu contraseña.']),
+      );
+      expect(JSON.stringify(res.body)).not.toMatch(/must be|should not|characters/);
+    });
+
     it('acepta el usuario sin distinguir mayúsculas', async () => {
       await login(USERNAME.toUpperCase()).expect(200);
     });

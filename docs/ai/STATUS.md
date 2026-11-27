@@ -1,59 +1,73 @@
 # STATUS — Estado vigente
 
-**Fecha de captura:** 2026-11-25 14:15 (America/La_Paz, -04:00).
-**Procedencia:** inspección del repositorio local `C:\dev\sistema-dental` y de GitHub por Claude Code (`git status`, `git log`, `git ls-remote`, `gh run watch`, `gh api .../branches/main/protection`) y ejecución local de validaciones. Forgejo: NO VERIFICADO (no configurado como remoto).
-**as_of_sha (HEAD local = origin/main observado):** `380478248a5d9afb1bd735a68592a1ee60174774`.
+**Fecha de captura:** 2026-11-27 17:45 (America/La_Paz, -04:00).
+**Procedencia:** Claude Code en el repositorio local `/home/ruth/Documents/Dental_Clinic/SistemaDental` (Linux): `git status`, `git log`, `git ls-remote` de `origin` y `upstream` (16:04), lectura de código y ejecución local de todas las validaciones (ver abajo). `gh` no está instalado: PR, CI y protección de `main` **NO VERIFICADO**. Forgejo: NO VERIFICADO.
+**as_of_sha (HEAD local):** `bbb34c76492d5470d0c8a49e2f577f411a11065d` en `feat/reservas-agenda-historia-clinica`, **con 76 archivos cambiados o nuevos sin versionar** (ver «Trabajo local sin versionar»).
+
+## Git observado (16:04)
+
+| Referencia | SHA |
+|---|---|
+| HEAD local (`feat/reservas-agenda-historia-clinica`) | `bbb34c7` |
+| `origin/feat/reservas-agenda-historia-clinica` | `bbb34c7` |
+| `origin/main` = `upstream/main` = `main` local | `8402a8f` |
+| `feat/t-02-intervalos-atencion` (solo local) | `8402a8f` |
+
+- Remotos: `origin` → fork `MarleneRuth/SistemaDental`; `upstream` → `acallecoymbra-cpu/SistemaDental` (**público**, ADR-008).
+- `bbb34c7` (T-01…T-18 salvo T-16, en un solo commit) **no está en `main`**. PR hacia `upstream`: NO VERIFICADO.
 
 ## Estado
 
-- **Base B-01…B-06 completa** en `main` (`3804782`). CI de `3804782` en verde con sus 3 trabajos (run `45670421896`): validación, integración y E2E.
-- `main` protegida: PR con 1 aprobación, historia lineal, sin force-push ni borrado, conversaciones resueltas y **3 checks obligatorios** (`lint · typecheck · test · build`, `integración (PostgreSQL)`, `e2e (Playwright)`, este último agregado el 2026-11-25 con autorización). El propietario puede saltarse las reglas (`enforce_admins` desactivado).
-- ADR-011 y ADR-012 aceptadas.
-- Colaboradora (alumna): pendiente; falta su usuario de GitHub.
-- Remoto único `origin` → GitHub `acallecoymbra-cpu/SistemaDental`, **público** por el momento (ADR-008).
+- Base B-01…B-06 en `main`. T-01…T-18 salvo T-16 en `bbb34c7` (rama del fork).
+- **Nuevo, sin versionar (2026-11-27):** CI del paciente, nombre por partes y celular con código de país (V-26/V-27, **PROPUESTA** hasta que el propietario confirme). Diseño: `docs/superpowers/specs/2026-11-27-paciente-ci-nombres-celular-design.md`; plan: `docs/superpowers/plans/2026-11-27-paciente-ci-nombres-celular.md`. Estado: **VERIFIED localmente** (validaciones abajo), revisado por un revisor independiente y corregidos sus 3 hallazgos importantes.
+- Desvío de proceso pendiente de decisión del propietario: `bbb34c7` reúne 17 tareas en un commit (el plan pide un PR por tarea).
 
-## Qué hay en `main`
+## Trabajo local sin versionar (sobre `bbb34c7`)
 
-| Bloque | Contenido | Commit |
-|---|---|---|
-| TASK-002 | Monorepo pnpm/Turborepo, API NestJS 11, web Next.js 15, `contracts`, `config` | `93d7a3d` |
-| B-01, B-02 | CI; PostgreSQL 17 en Docker; TypeORM 0.3 con migraciones | `12a81b0` |
-| B-03 | Seguridad HTTP base (ADR-011) | `754d344` |
-| B-04 | Login, sesiones, bloqueo, auditoría inmutable, CLI `dentist:create` (ADR-012) | `53d5812` |
-| B-05, B-06 | Molde de tratamientos (API + web + pruebas), base web, Playwright, guía `docs/GUIA-MOLDE-MODULO.md`; corrección de `AUDIT_IP_SALT` vacía | `3804782` |
+1. **V-26/V-27** — migración `1765200000000-PatientNamePartsCiPhoneCountry` (columnas de nombre por partes y claves, `phone_country_code`, `guardian_phone_country_code`, `ci`; datos migrados; WhatsApp de 8 dígitos → `+591…`); contratos (`phone.ts`, tipos nuevos); API de pacientes, reserva (`kind: 'new' | 'returning'`), «Mis consultas» (primer nombre + primer apellido + país + celular), WhatsApp de la clínica validado por país (E.164, máx. 15 dígitos); pantallas con selector de país (Bolivia por defecto) y CI; pruebas nuevas y adaptadas.
+2. Previo a hoy: componente `PhoneInput` (filtro de caracteres), `complete()` guarda `completed_at`/`completed_by`, mensajes en español en los DTO de login (archivo de la base B-04).
+3. **Límite RF-09 compartido:** la reserva «ya estoy registrado» sin coincidencias cuenta como intento fallido junto con «Mis consultas» (5 en 10 min ⇒ ambos caminos bloqueados 15 min). Antes no tenía límite y permitía probar nombre + celular sin fin.
+4. Documentos: este STATUS, HANDOFF, `VALIDACION-REQUISITOS.md` §6.4, `DATA-MODEL.md` (`patient`), `DECISIONS.md` (nota ADR-003), `MODULE.md` de pacientes y citas, `docs/ODONTOGRAMA-T16.md` (propuesta de la desarrolladora), spec y plan.
 
-## Entorno local del propietario (verificado el 2026-11-25)
+## Validaciones ejecutadas (2026-11-27, Linux, Node 24.22.1, pnpm 12.18.0 vía corepack, Docker 29.10.1)
 
-- `.env` local: verificado de forma indirecta (Claude Code no puede leer `.env*`). La API arranca; health `database: up`; login con `Origin: http://localhost:3000` → 401 (origen aceptado); otro origen → 403; CORS devuelve `http://localhost:3000`.
-- `.env.example`: el propietario agregó las variables nuevas y confirmó que no contiene secretos reales (Claude Code no puede leerlo); se versiona en el commit siguiente a `3804782`.
-- Base `sistema_dental` migrada hasta `CreateTreatments1764300000000`. El propietario creó su dentista de desarrollo y probó `pnpm dev` con éxito (2026-11-25).
-- Corrección (commit siguiente a `b372b6f`): el script `dev` de la API solo compilaba y no arrancaba el servidor; ahora usa `nest start --watch` (`@nestjs/cli` 11.0.24, `nest-cli.json`). Verificado: arranca (health 200) y se reinicia al cambiar un archivo.
-- El puerto 3000 lo ocupaba el contenedor ajeno `open-webui-old`; el propietario lo liberó. README: nuevas filas en «Problemas frecuentes» (carpeta equivocada y puerto ocupado).
-
-## Validaciones ejecutadas (2026-11-25, Windows 11, Node 24.22.3, pnpm 12.18.0, Docker 29.6.1)
-
-| Comando | Local | GitHub (run `45670421896`) |
+| Comando | Línea base (antes del cambio) | Final |
 |---|---|---|
 | `prettier --check .`, `pnpm lint`, `pnpm typecheck`, `pnpm build` | PASS | PASS |
-| `pnpm test` | PASS: api 33, contracts 4, web 3 | PASS |
-| `pnpm test:integration` | PASS: 32 | PASS |
-| `pnpm test:e2e` | PASS: 12 | PASS |
+| `pnpm test` | contracts 21, api 38, web 28 | contracts 38, api 38, web 30: PASS |
+| `pnpm test:integration` | 251/251 | 275/275 PASS |
+| `pnpm test:e2e` | 81 passed, 1 skipped | 85 passed, 1 skipped (escritorio y 360 px) |
 
-No ejecutado: login manual en el navegador con `pnpm dev` (falta crear el dentista de desarrollo).
+Además: migración aplicada a la base de desarrollo `sistema_dental`; capturas de `/reservar` a 1280 y 360 px sin desborde horizontal.
+
+## Hallazgos abiertos
+
+0. Propuesta para el propietario (no implementada): límite adicional por número de celular (además del de IP) y verificación de `TRUST_PROXY` detrás de Nginx en el VPS (C-02).
+
+1. **Corregido (2026-11-27):** confirmación de pago concurrente daba 409 a veces (prueba intermitente). Causa: `SELECT … LEFT JOIN payment_proof … FOR UPDATE OF a`; tras esperar el bloqueo, PostgreSQL releía la cita pero no el comprobante. Ahora se bloquea la cita y se lee el comprobante en otra consulta (`appointment-actions.service.ts`). Prueba nueva: 15 rondas de 6 confirmaciones en paralelo (fallaba 3 de 3 antes; pasa 5 de 5 después).
+2. Menores diferidos de la revisión: errores crudos de la migración con nombres legados muy largos o colisiones de claves (solo bases de desarrollo); los buscadores del panel/agenda solo quitan el prefijo 591; doble *cast* en `appointments.service.ts`; `PhoneInput` fija el país inicial al montar.
+
+## Entorno de este equipo
+
+- Node activo por defecto 22.23.5: usar `nvm use 24` (24.22.1). `pnpm` vía `corepack`. `gh` no instalado.
+- Base de desarrollo local: dentista activo `dra.prueba` (el anterior `dra.ejemplo` desactivado); WhatsApp de la clínica configurado; intervalo de atención 28/11/2026 08:00–12:00. Solo datos locales, nada de esto está en Git.
 
 ## Bloqueadores
 
-1. Lista de estados de pieza del consultorio (V-25): bloquea T-16 / TASK-504.
-2. Usuario de GitHub de la alumna: bloquea su acceso y el inicio de T-01.
+1. Lista de estados de pieza (V-25) y respuestas de `docs/ODONTOGRAMA-T16.md` §9: bloquean T-16.
+2. Proveedor de correo sin elegir (RF-21, RNF-12).
+3. Confirmación del propietario de V-26/V-27.
 
 ## Próxima acción recomendada
 
-Invitar a la alumna cuando haya usuario; ella empieza por T-01 (configuración de la clínica) copiando el molde. Pendientes de la etapa de cierre (C-01…C-04) quedan para el propietario.
+1. Autorizar STAGE y COMMIT del trabajo local (por separado), luego PUSH al fork.
+2. Propietario: confirmar V-26/V-27 y decidir cómo revisar `bbb34c7` + este cambio.
 
 ## Autorizaciones
 
 | Acción | Estado |
 |---|---|
-| PUSH de la corrección de `pnpm dev` y del README | Autorizado por el propietario (2026-11-25), incluye stage y commit |
+| STAGE / COMMIT del trabajo local | Pendiente de autorización |
+| PUSH de `feat/reservas-agenda-historia-clinica` | Pendiente de autorización |
+| Merge a `main` (`upstream`) | Requiere PR y aprobación del propietario |
 | DEPLOY | No autorizado |
-| Agregar colaboradora | Pendiente: falta su usuario de GitHub |

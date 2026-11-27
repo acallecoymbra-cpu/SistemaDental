@@ -1,0 +1,38 @@
+/* Celular con código de país: país a la izquierda, número a la derecha; se apilan en celular. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  gap: 0 12px;
+  align-items: start;
+}
+
+.numberRow {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.numberRow input {
+  flex: 1;
+  min-width: 0;
+}
+
+.prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.6rem;
+  padding: 0 10px;
+  border: 1px solid #b9b3a4;
+  border-radius: 12px;
+  background: #f4f1ea;
+  font-variant-numeric: tabular-nums;
+  color: #2f3a35;
+}
+
+@media (max-width: 480px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

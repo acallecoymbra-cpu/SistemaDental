@@ -11,6 +11,9 @@ export const envValidationSchema = Joi.object({
   WEB_ORIGINS: Joi.string()
     .pattern(/^https?:\/\/[^\s,]+(\s*,\s*https?:\/\/[^\s,]+)*$/)
     .required(),
+  /** Tarea que cancela reservas vencidas cada minuto (T-08). Por defecto activa, salvo en pruebas. */
+  HOLD_EXPIRATION_JOB: Joi.boolean().optional(),
+  EMAIL_OUTBOX_JOB: Joi.boolean().optional(),
   /** true cuando la API corre detrás de Nginx (producción). */
   TRUST_PROXY: Joi.boolean().default(false),
   /** Cookie de sesión solo por HTTPS. Por defecto: true en producción, false en desarrollo. */

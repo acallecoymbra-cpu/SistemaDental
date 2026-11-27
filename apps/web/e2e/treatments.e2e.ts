@@ -9,7 +9,7 @@ import { loginAsDentist, uniqueName } from './helpers';
 test.describe('catálogo de tratamientos', () => {
   test('el portal muestra los tratamientos de la semilla', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Renovando Sonrisas' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Renovando Sonrisas');
     await expect(page.getByRole('heading', { name: 'Limpieza', level: 3 })).toBeVisible();
   });
 
