@@ -37,7 +37,8 @@ test.describe('configuración de la clínica', () => {
     await page.getByLabel('Precio de la consulta (Bs)').fill('30');
     await deposit.fill('15,50');
     await page.getByLabel('Referencia del QR de pago').fill('https://ejemplo.test/qr.png');
-    await page.getByLabel('WhatsApp del consultorio').fill('59170000000');
+    await expect(page.getByLabel('Código del país del WhatsApp')).toHaveValue('591');
+    await page.getByLabel('WhatsApp del consultorio').fill('70000000');
     await save.click();
     await expect(page.getByRole('status')).toContainText('Configuración guardada.');
 
@@ -47,6 +48,9 @@ test.describe('configuración de la clínica', () => {
     await expect(page.getByLabel('Referencia del QR de pago')).toHaveValue(
       'https://ejemplo.test/qr.png',
     );
-    await expect(page.getByLabel('WhatsApp del consultorio')).toHaveValue('59170000000');
+    await expect(page.getByLabel('WhatsApp del consultorio')).toHaveValue('70000000');
+    // El portal enlaza al WhatsApp con el código de Bolivia
+    await page.goto('/');
+    await expect(page.locator('a[href^="https://wa.me/59170000000"]').first()).toBeAttached();
   });
 });

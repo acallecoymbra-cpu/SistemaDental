@@ -23,6 +23,7 @@
 - **Decision:** identificación solo con nombre + celular, **sin OTP ni código**. El paciente ve únicamente sus consultas, nunca historial clínico. Al agendar se pregunta si ya está registrado; si no, registra datos con fecha de nacimiento; menor de edad ⇒ celular de padre/madre obligatorio. Mismo celular con distinto nombre = pacientes distintos.
 - **Reasoning:** decisión del cliente; prioriza simplicidad sobre verificación de posesión.
 - **Consequences:** riesgo residual de que un tercero que conozca nombre y celular vea consultas ajenas (aceptado); mitigación por rate limit RF-09 y respuestas mínimas. Menores (V-18): etiqueta de menor y consulta con el celular del apoderado.
+- **Nota (2026-11-27, PROPUESTA, V-27):** la identificación sigue siendo nombre + celular, sin código, pero con **primer nombre (o todos los nombres) + primer apellido + país + celular**, comparando nombres sin tildes, mayúsculas, espacios ni puntos. El CI (V-26) se registra pero **no** identifica. Implementado; falta confirmación del propietario.
 
 ## ADR-004 — Una clínica, un dentista y web como único cliente MVP
 - **Status:** ACEPTADA por el cliente, 2026-11-20 (V-13: sistema web, una sola clínica, «Renovando Sonrisas»).
@@ -97,3 +98,4 @@
 | 2026-11-25 | Reparto de trabajo aprobado | Propietario (instrucción directa en sesión de Claude Code) | Base B-01…B-06 por propietario/Claude Code; tareas T-01…T-18 por la alumna; ver `docs/PLAN-IMPLEMENTACION.md` |
 | 2026-11-25 | ADR-011 aceptada | Propietario (instrucción directa en sesión de Claude Code) | CSRF por verificación de origen + forma única de errores de la API |
 | 2026-11-25 | ADR-012 aceptada | Propietario (instrucción directa en sesión de Claude Code) | Sesiones del dentista: Argon2id, cookie opaca, deny-by-default, 12 h máximo, contraseña de 12 caracteres |
+| 2026-11-27 | ADR-003: nota V-27 (PROPUESTA) | Desarrolladora (registrado por Claude Code) | Consulta con primer nombre + primer apellido + país + celular; CI como dato |

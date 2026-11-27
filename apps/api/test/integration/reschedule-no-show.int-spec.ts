@@ -1,5 +1,6 @@
 import { todayInClinicTimeZone } from '@sistema-dental/contracts';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Reprogramar y «no asistió» (T-12) con PostgreSQL real. Datos inventados. */
 describe('reprogramar y no asistió (T-12, PostgreSQL real)', () => {
@@ -61,10 +62,14 @@ describe('reprogramar y no asistió (T-12, PostgreSQL real)', () => {
     cookie = await ctx.loginAsDentist();
     const [t] = await ctx.db.query('SELECT id FROM treatment WHERE active = true LIMIT 1');
     treatmentId = t.id;
-    const [p] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ('Paciente Mueve', 'paciente mueve', '75700001', 'web') RETURNING id`,
-    );
+    const p = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Mueve',
+        phone: '75700001',
+        origin: 'web',
+      }),
+    };
     patientId = p.id;
     for (let n = 5; n <= 12; n += 1) await interval(day(n));
   });

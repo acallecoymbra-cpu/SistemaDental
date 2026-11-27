@@ -153,6 +153,15 @@ Todos los valores de esta tabla quedaron **aprobados por el cliente** el 2026-11
 | V-24 | ¿Aviso al dentista si el paciente no tiene correo? | Sí. | ACEPTADA | Cierra V-04b; RF-21 |
 | V-25 | Lista de estados de pieza | La va a enviar. | PENDIENTE | TASK-504 sigue bloqueada |
 
+### 6.4 Cambios pedidos por la desarrolladora (2026-11-27)
+
+**Procedencia:** pedido de la desarrolladora del proyecto en sesión de Claude Code (2026-11-27). Diseño en `docs/superpowers/specs/2026-11-27-paciente-ci-nombres-celular-design.md`. **Implementado** en la rama `feat/reservas-agenda-historia-clinica` (sin versionar al registrar esto). Cambian el detalle de RF-03, RF-08/CU-03, RF-22 y V-02: quedan **PROPUESTA hasta que el propietario los confirme**.
+
+| # | Cambio | Estado | Impacto |
+|---|---|---|---|
+| V-26 | El paciente registra su **CI** (dato del paciente, no sirve para identificarse). Obligatorio al registrarse un adulto por la web; opcional para menores y en el panel. Único si existe. Nunca en respuestas públicas ni en la auditoría. | PROPUESTA | `patient.ci` |
+| V-27 | Nombre por partes (nombres, primer apellido, segundo apellido opcional). «Mis consultas» y el paciente que vuelve a reservar se identifican con **primer nombre + primer apellido + celular** (sin tildes, mayúsculas, espacios ni puntos: «De la Roca» = `delaroca`). El celular se elige con **código de país** (Bolivia, vecinos, EE.UU. y España; Bolivia por defecto) y se escribe sin prefijo. | PROPUESTA | `patient` (claves de nombre, `phone_country_code`), ADR-003 |
+
 ## 7. Preguntas que siguen abiertas
 
 1. Lista de estados de pieza del consultorio (V-25). Al recibirla, no versionar la foto: solo la lista de estados.

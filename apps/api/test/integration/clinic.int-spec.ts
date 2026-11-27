@@ -66,7 +66,7 @@ describe('configuración de la clínica (T-01, PostgreSQL real)', () => {
 
     it('nunca expone la referencia del QR', async () => {
       await admin()
-        .patch({ paymentQrRef: 'https://ejemplo.test/qr.png', whatsappPhone: '59170000000' })
+        .patch({ paymentQrRef: 'https://ejemplo.test/qr.png', whatsappPhone: '+59170000000' })
         .expect(200);
       const res = await ctx.http().get('/api/v1/clinic').expect(200);
       expect(Object.keys(res.body).sort()).toEqual([
@@ -74,7 +74,7 @@ describe('configuración de la clínica (T-01, PostgreSQL real)', () => {
         'depositCents',
         'whatsappPhone',
       ]);
-      expect(res.body.whatsappPhone).toBe('59170000000');
+      expect(res.body.whatsappPhone).toBe('+59170000000');
     });
   });
 
@@ -172,6 +172,14 @@ describe('configuración de la clínica (T-01, PostgreSQL real)', () => {
       await admin().patch({ whatsappPhone: 'abc' }).expect(400);
       await admin().patch({ whatsappPhone: '123' }).expect(400);
       await admin().patch({ whatsappPhone: '7000-0000' }).expect(400);
+      // sin código de país, o con un número que no es válido para su país
+      await admin().patch({ whatsappPhone: '79000000' }).expect(400);
+      const res = await admin().patch({ whatsappPhone: '+5917900000' }).expect(400);
+      expect(res.body.message).toBe('El WhatsApp no es válido para el país elegido.');
+      await admin().patch({ whatsappPhone: '+59179000000' }).expect(200);
+      await admin().patch({ whatsappPhone: '+5491123456789' }).expect(200);
+      // más de 15 dígitos en total (límite internacional E.164): 400, nunca 500
+      await admin().patch({ whatsappPhone: '+5512345678901234' }).expect(400);
     });
   });
 

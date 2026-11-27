@@ -13,6 +13,7 @@ export * from './clinical-history';
 export * from './complete-appointment';
 export * from './patient-record';
 export * from './patients';
+export * from './phone';
 export * from './public-lookup';
 export * from './reschedule-appointment';
 export * from './scheduling';

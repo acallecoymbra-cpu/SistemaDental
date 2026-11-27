@@ -2,6 +2,7 @@
 
 import type { AppointmentStatus } from './appointment-status';
 import type { CancelNotificationStatus } from './cancel-appointment';
+import type { PhoneDialCode } from './phone';
 
 /** Rango máximo de la agenda, en días (una semana con holgura para vistas mensuales). */
 export const AGENDA_MAX_RANGE_DAYS = 62;
@@ -10,8 +11,10 @@ export interface AdminAppointmentPatient {
   id: string;
   fullName: string;
   phone: string;
+  phoneCountryCode: PhoneDialCode;
   isMinor: boolean;
   guardianPhone: string | null;
+  guardianPhoneCountryCode: PhoneDialCode | null;
 }
 
 /** Comprobante de pago enviado por el paciente (T-07). */

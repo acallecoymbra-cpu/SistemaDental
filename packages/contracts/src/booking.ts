@@ -1,16 +1,41 @@
 /** Reserva pública de una consulta (RF-04, RF-05, T-06). */
 
-/** Datos del paciente al reservar. Si ya está registrado se reconoce por nombre + celular. */
-export interface BookingPatientRequest {
-  fullName: string;
+import type { PhoneDialCode } from './phone';
+
+/**
+ * Paciente que ya se atendió («Sí, ya estoy registrado»): se reconoce con primer nombre,
+ * primer apellido y celular (el suyo o el de su apoderado), como en «Mis consultas».
+ */
+export interface ReturningBookingPatient {
+  kind: 'returning';
+  firstName: string;
+  firstSurname: string;
+  phoneCountryCode: PhoneDialCode;
   phone: string;
   /** Obligatorio: ahí llegan los avisos de la clínica. */
   email: string;
-  /** Obligatoria solo la primera vez (si el paciente ya existe se ignora). Formato `AAAA-MM-DD`. */
-  birthDate?: string | null;
+}
+
+/** Paciente nuevo: completa todos sus datos. */
+export interface NewBookingPatient {
+  kind: 'new';
+  givenNames: string;
+  firstSurname: string;
+  secondSurname?: string | null;
+  /** Obligatorio para mayores de edad. */
+  ci?: string | null;
+  phoneCountryCode: PhoneDialCode;
+  phone: string;
+  email: string;
+  /** Formato `AAAA-MM-DD`. */
+  birthDate: string;
   /** Obligatorio si el paciente es menor de 18 años. */
+  guardianPhoneCountryCode?: PhoneDialCode | null;
   guardianPhone?: string | null;
 }
+
+/** Datos del paciente al reservar. */
+export type BookingPatientRequest = ReturningBookingPatient | NewBookingPatient;
 
 export interface CreatePublicBookingRequest {
   treatmentId: string;

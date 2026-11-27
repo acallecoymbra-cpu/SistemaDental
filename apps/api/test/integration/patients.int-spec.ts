@@ -5,6 +5,28 @@ import {
   type PatientWriteResponse,
 } from '@sistema-dental/contracts';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
+
+/**
+ * Convierte el formato corto de estas pruebas (`fullName`: primera palabra = nombres, resto =
+ * primer apellido; celular de Bolivia por defecto) al cuerpo real de la API.
+ */
+function withParts(body: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...body };
+  if (typeof out.fullName === 'string') {
+    const [givenNames = '', ...rest] = out.fullName.trim().split(/\s+/);
+    delete out.fullName;
+    out.givenNames = givenNames;
+    out.firstSurname = rest.join(' ');
+  }
+  if (typeof out.phone === 'string' && !('phoneCountryCode' in out)) {
+    out.phoneCountryCode = '591';
+  }
+  if (typeof out.guardianPhone === 'string' && !('guardianPhoneCountryCode' in out)) {
+    out.guardianPhoneCountryCode = '591';
+  }
+  return out;
+}
 
 /**
  * Pruebas de integración de pacientes (T-05, PostgreSQL real). Todos los datos son inventados.
@@ -19,14 +41,19 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
   const admin = () => ({
     get: (path = '') => ctx.http().get(`${BASE}${path}`).set('Cookie', cookie),
     post: (body: object) =>
-      ctx.http().post(BASE).set('Origin', TEST_WEB_ORIGIN).set('Cookie', cookie).send(body),
+      ctx
+        .http()
+        .post(BASE)
+        .set('Origin', TEST_WEB_ORIGIN)
+        .set('Cookie', cookie)
+        .send(withParts(body as Record<string, unknown>)),
     patch: (id: string, body: object) =>
       ctx
         .http()
         .patch(`${BASE}/${id}`)
         .set('Origin', TEST_WEB_ORIGIN)
         .set('Cookie', cookie)
-        .send(body),
+        .send(withParts(body as Record<string, unknown>)),
   });
 
   async function create(body: object): Promise<PatientWriteResponse> {
@@ -84,7 +111,12 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
       });
       expect(res.warnings).toEqual([]);
       expect(res.patient).toMatchObject({
-        fullName: 'Ana  Pérez',
+        fullName: 'Ana Pérez',
+        givenNames: 'Ana',
+        firstSurname: 'Pérez',
+        secondSurname: null,
+        ci: null,
+        phoneCountryCode: '591',
         phone: '70010002',
         email: 'ana@ejemplo.test',
         birthDate: '1990-03-10',
@@ -126,10 +158,50 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
       await admin().post({ fullName: 'Sin Celular' }).expect(400);
     });
 
-    it('rechaza un celular que no tiene entre 7 y 15 dígitos (400)', async () => {
+    it('rechaza un celular que no es válido para su país (400)', async () => {
       const res = await admin().post({ fullName: 'Celular Malo', phone: 'abc' }).expect(400);
-      expect(res.body.message).toBe('El celular debe tener entre 7 y 15 dígitos.');
-      await admin().post({ fullName: 'Celular Corto', phone: '12345' }).expect(400);
+      expect(res.body.message).toBe('El celular no es válido para el país elegido.');
+      // Bolivia exige 8 dígitos
+      await admin().post({ fullName: 'Celular Corto', phone: '7000001' }).expect(400);
+      await admin()
+        .post({ fullName: 'Pais Inventado', phone: '70000001', phoneCountryCode: '999' })
+        .expect(400);
+    });
+
+    it('guarda nombre por partes, CI normalizado y celular de otro país', async () => {
+      const res = await create({
+        givenNames: 'María José',
+        firstSurname: 'de la Roca',
+        secondSurname: 'Pérez',
+        ci: '1.234.567 sc',
+        phoneCountryCode: '54',
+        phone: '+54 9 22 3456 7890',
+      });
+      expect(res.patient).toMatchObject({
+        fullName: 'María José de la Roca Pérez',
+        givenNames: 'María José',
+        firstSurname: 'de la Roca',
+        secondSurname: 'Pérez',
+        ci: '1234567SC',
+        phoneCountryCode: '54',
+        phone: '92234567890',
+      });
+      const [row] = await ctx.db.query(
+        'SELECT first_given_name_key, given_names_key, first_surname_key FROM patient WHERE id = $1',
+        [res.patient.id],
+      );
+      expect(row).toEqual({
+        first_given_name_key: 'maria',
+        given_names_key: 'mariajose',
+        first_surname_key: 'delaroca',
+      });
+    });
+
+    it('rechaza un CI con caracteres no permitidos (400)', async () => {
+      const res = await admin()
+        .post({ fullName: 'Ci Malo', phone: '70031001', ci: '12_34' })
+        .expect(400);
+      expect(res.body.message).toBe('El CI solo admite números, letras y guion (4 a 20).');
     });
   });
 
@@ -154,11 +226,21 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
     it('la base también impide el duplicado, sin pasar por la API', async () => {
       await create({ fullName: 'Base Duplicado', phone: '70060001' });
       await expect(
-        ctx.db.query(
-          `INSERT INTO patient (full_name, normalized_name, phone, origin)
-           VALUES ('Base Duplicado', 'base duplicado', '70060001', 'dentist')`,
-        ),
+        insertPatient(ctx.db, { givenNames: 'BASE', firstSurname: 'duplicado', phone: '70060001' }),
       ).rejects.toMatchObject({ driverError: { code: '23505' } });
+    });
+
+    it('el mismo número con otro país es otro paciente', async () => {
+      await create({ fullName: 'Pais Distinto', phone: '70061001' });
+      await create({ fullName: 'Pais Distinto', phone: '70061001', phoneCountryCode: '54' });
+    });
+
+    it('un CI ya usado por otro paciente da 409', async () => {
+      await create({ fullName: 'Ci Primero', phone: '70062001', ci: '7654321' });
+      const res = await admin()
+        .post({ fullName: 'Ci Segundo', phone: '70062002', ci: '7654321' })
+        .expect(409);
+      expect(res.body.message).toBe('Ese CI ya pertenece a otro paciente.');
     });
   });
 
@@ -254,6 +336,12 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
       expect(names).toEqual(expect.arrayContaining(['Búsqueda Gómez', 'Busqueda Rojas']));
     });
 
+    it('busca por CI', async () => {
+      await create({ fullName: 'Busca Ci', phone: '70120009', ci: '9988776 LP' });
+      const res = await admin().get('?q=9988776LP').expect(200);
+      expect((res.body as AdminPatient[]).map((p) => p.fullName)).toEqual(['Busca Ci']);
+    });
+
     it('busca por celular, también con formato distinto', async () => {
       const res = await admin()
         .get(`?q=${encodeURIComponent('+591 7012-0001')}`)
@@ -315,6 +403,19 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
       expect(rows[1].after_json).toEqual({ email: 'despues@ejemplo.test' });
     });
 
+    it('un paciente sin CI se edita sin exigirlo, y el CI no queda en la auditoría', async () => {
+      const { patient } = await create({ fullName: 'Sin Ci', phone: '70145001' });
+      await admin().patch(patient.id, { email: 'sinci@ejemplo.test' }).expect(200);
+      const res = await admin().patch(patient.id, { ci: '5554443' }).expect(200);
+      expect((res.body as PatientWriteResponse).patient.ci).toBe('5554443');
+      const rows = await ctx.db.query(
+        `SELECT before_json, after_json FROM audit_log
+         WHERE entity_type = 'patient' AND entity_id = $1`,
+        [patient.id],
+      );
+      expect(JSON.stringify(rows)).not.toMatch(/5554443/);
+    });
+
     it('un cambio vacío no registra auditoría', async () => {
       const { patient } = await create({ fullName: 'Sin Cambios', phone: '70150001' });
       await admin().patch(patient.id, {}).expect(200);
@@ -340,7 +441,9 @@ describe('pacientes (T-05, PostgreSQL real)', () => {
     });
 
     it('un id inexistente da 404', async () => {
-      await admin().patch('3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', { fullName: 'X' }).expect(404);
+      await admin()
+        .patch('3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', { givenNames: 'Equis' })
+        .expect(404);
     });
   });
 });

@@ -1,4 +1,5 @@
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Historia clínica por versiones (T-15) con PostgreSQL real. Datos inventados. */
 describe('historia clínica por versiones (T-15, PostgreSQL real)', () => {
@@ -24,12 +25,13 @@ describe('historia clínica por versiones (T-15, PostgreSQL real)', () => {
   const read = (id = patientId) => ctx.http().get(url(id)).set('Cookie', cookie);
 
   async function newPatient(name: string, phone: string): Promise<string> {
-    const [p] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ($1, $2, $3, 'web') RETURNING id`,
-      [name, name.toLowerCase(), phone],
-    );
-    return p.id;
+    const [givenNames = '', ...rest] = name.split(' ');
+    return insertPatient(ctx.db, {
+      givenNames,
+      firstSurname: rest.join(' ') || givenNames,
+      phone,
+      origin: 'web',
+    });
   }
 
   beforeAll(async () => {

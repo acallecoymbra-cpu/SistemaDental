@@ -1,6 +1,7 @@
 import { EmailOutboxService } from '../../src/appointments/email-outbox.service';
 import { MailError, Mailer, type MailMessage } from '../../src/mail/mailer';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Cancelar y avisar (T-13) con PostgreSQL real. Datos inventados. */
 describe('cancelar consulta y avisar (T-13, PostgreSQL real)', () => {
@@ -52,15 +53,23 @@ describe('cancelar consulta y avisar (T-13, PostgreSQL real)', () => {
     cookie = await ctx.loginAsDentist();
     const [t] = await ctx.db.query('SELECT id FROM treatment WHERE active = true LIMIT 1');
     treatmentId = t.id;
-    const [a] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, email, origin)
-       VALUES ('Paciente Con Correo', 'paciente con correo', '75600001', 'con@ejemplo.test', 'web')
-       RETURNING id`,
-    );
-    const [b] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ('Paciente Sin Correo', 'paciente sin correo', '75600002', 'dentist') RETURNING id`,
-    );
+    const a = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Con Correo',
+        phone: '75600001',
+        email: 'con@ejemplo.test',
+        origin: 'web',
+      }),
+    };
+    const b = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Sin Correo',
+        phone: '75600002',
+        origin: 'dentist',
+      }),
+    };
     withEmail = a.id;
     withoutEmail = b.id;
   });

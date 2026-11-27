@@ -39,3 +39,8 @@ export function formatBirthDate(birthDate: string | null): string {
   const [year, month, day] = birthDate.split('-');
   return `${day}/${month}/${year}`;
 }
+
+/** `591`, `70000000` -> `+591 70000000` (celular con su código de país). */
+export function formatPhone(dialCode: string | null, phone: string): string {
+  return `+${dialCode ?? '591'} ${phone}`;
+}

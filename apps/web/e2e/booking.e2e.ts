@@ -28,7 +28,9 @@ test.describe('reserva pública', () => {
   }
 
   async function fillNewPatient(page: Page, suffix: string, birth = '1990-04-12') {
-    await page.getByLabel('Nombre completo').fill(`Paciente Reserva ${suffix}`);
+    await page.getByLabel('Nombre(s)').fill('Paciente');
+    await page.getByLabel('Primer apellido').fill(`Reserva ${suffix}`);
+    await page.getByLabel('CI', { exact: true }).fill(`${suffix}000`);
     await page
       .getByLabel('Celular', { exact: true })
       .fill(`7200${suffix.slice(-4).padStart(4, '0')}`);
@@ -67,7 +69,7 @@ test.describe('reserva pública', () => {
     await expect(
       page.getByRole('alert').filter({ hasText: 'necesita el celular de su apoderado' }),
     ).toBeVisible();
-    await page.getByLabel('Celular del apoderado').fill('70999999');
+    await page.getByLabel('Celular del apoderado').fill(`7099${suffix}`);
     await page.getByRole('button', { name: 'Reservar', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('Tu horario está apartado');
   });
@@ -84,9 +86,58 @@ test.describe('reserva pública', () => {
     await chooseSlot(page, '11:00');
     await page.getByLabel('Sí, ya estoy registrado').check();
     await expect(page.getByLabel('Fecha de nacimiento')).toHaveCount(0);
-    await page.getByLabel('Nombre completo').fill(`PACIENTE RESERVA ${suffix}`);
+    await expect(page.getByLabel('CI', { exact: true })).toHaveCount(0);
+    await page.getByLabel('Nombre', { exact: true }).fill('PACIENTE');
+    await page.getByLabel('Primer apellido').fill(`RESERVA ${suffix}`);
     await page.getByLabel('Celular', { exact: true }).fill(`7200${suffix.slice(-4)}`);
     await page.getByLabel('Correo').fill(`reserva${suffix}@ejemplo.test`);
+    await page.getByRole('button', { name: 'Reservar', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Tu horario está apartado');
+  });
+
+  test('el celular tiene Bolivia por defecto y se puede elegir otro país', async ({ page }) => {
+    await page.goto('/reservar');
+    const country = page.getByLabel('Código del país', { exact: true });
+    await expect(country).toHaveValue('591');
+    await expect(country.locator('option:checked')).toHaveText(/Bolivia/);
+    await expect(page.getByText('+591', { exact: true })).toBeVisible();
+    await country.selectOption('54');
+    await expect(page.getByText('+54', { exact: true })).toBeVisible();
+  });
+
+  test('pegar el número con +591 y luego volver sin prefijo reconoce al mismo paciente', async ({
+    page,
+  }, testInfo) => {
+    const desktop = testInfo.project.name === 'escritorio';
+    const otherDay = futureDate(desktop ? 74 : 75);
+    await loginAsDentist(page);
+    await createInterval(page, otherDay, '08:00', '09:30');
+    await page.context().clearCookies();
+    const cel = `7203${desktop ? 1 : 2}003`;
+    const pick = async (hour: string) => {
+      await page.goto('/reservar');
+      await page.getByLabel('Tratamiento', { exact: true }).selectOption({ label: 'Limpieza' });
+      await page.getByLabel('Fecha', { exact: true }).fill(otherDay);
+      await page.getByRole('button', { name: hour, exact: true }).click();
+    };
+    await pick('08:00');
+    await page.getByLabel('Nombre(s)').fill('María José');
+    await page.getByLabel('Primer apellido').fill('de la Roca');
+    await page.getByLabel('CI', { exact: true }).fill(`77${cel}`);
+    await page
+      .getByLabel('Celular', { exact: true })
+      .fill(`+591 ${cel.slice(0, 4)}-${cel.slice(4)}`);
+    await page.getByLabel('Correo').fill(`roca${cel}@ejemplo.test`);
+    await page.getByLabel('Fecha de nacimiento').fill('1991-02-03');
+    await page.getByRole('button', { name: 'Reservar', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Tu horario está apartado');
+
+    await pick('08:45');
+    await page.getByLabel('Sí, ya estoy registrado').check();
+    await page.getByLabel('Nombre', { exact: true }).fill('maria');
+    await page.getByLabel('Primer apellido').fill('DE LA ROCA');
+    await page.getByLabel('Celular', { exact: true }).fill(cel);
+    await page.getByLabel('Correo').fill(`roca${cel}@ejemplo.test`);
     await page.getByRole('button', { name: 'Reservar', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('Tu horario está apartado');
   });

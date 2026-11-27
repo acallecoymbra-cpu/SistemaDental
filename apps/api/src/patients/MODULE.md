@@ -4,13 +4,16 @@ Pacientes de la clínica. Los crea la doctora desde el panel (origen `dentist`);
 
 ## Rutas (`admin/patients`, requieren sesión)
 
-- `GET ?q=` busca por nombre (sin tildes ni mayúsculas) o por celular (también el del apoderado). Máx. 50.
+- `GET ?q=` busca por nombre (sin tildes ni mayúsculas), por celular (también el del apoderado) o por CI exacto. Máx. 50.
 - `GET :id`, `POST`, `PATCH :id`. No hay `DELETE`: los pacientes no se borran.
 
 ## Reglas
 
-- Identidad: `normalized_name` + `phone` únicos (409 si se repite). Mismo celular con otro nombre = otro paciente + aviso `SHARED_PHONE_WARNING`.
-- Celular: solo dígitos, 7–15; se quita el prefijo 591 si trae 11 dígitos.
+- Nombre por partes (V-27): `givenNames`, `firstSurname`, `secondSurname?`. `fullName` se arma con las partes (solo lectura). Claves `first_given_name_key`, `given_names_key`, `first_surname_key`, `second_surname_key`: sin tildes, minúsculas, solo a–z («De la Roca» → `delaroca`).
+- Identidad: índice único `patient_identity_uq` = claves de nombres y apellidos + país + celular (409 si se repite). Mismo celular con otro nombre = otro paciente + aviso `SHARED_PHONE_WARNING`.
+- Celular con país (`phoneCountryCode`: 591, 54, 55, 56, 51, 595, 1, 34): se guarda el número nacional; Bolivia exactamente 8 dígitos, los demás 6–14; si pegan el prefijo del país se quita.
+- CI (V-26): opcional en el panel; mayúsculas, sin espacios ni puntos, `^[0-9A-Z-]{4,20}$`; único si existe (`patient_ci_uq` → 409 «Ese CI ya pertenece a otro paciente.»). Nunca en la auditoría (solo `ciChanged: true`).
+- Búsqueda pública (`patient-lookup.ts`): primer nombre o todos los nombres + primer apellido + país + celular propio o del apoderado. La usan «Mis consultas» y la reserva de quien vuelve.
 - Menor de 18 (hora de La Paz): exige `guardianPhone` (CHECK en base + 400 en servicio).
 - `is_minor` se guarda y se recalcula al editar; puede quedar desactualizado cuando cumple 18 hasta la próxima edición (supuesto documentado).
 - Auditoría: `patient_created` (solo origen y esMenor) y `patient_updated` (solo campos cambiados); sin datos de contacto en la creación.

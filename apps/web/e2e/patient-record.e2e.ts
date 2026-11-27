@@ -21,7 +21,11 @@ test.describe('ficha del paciente', () => {
         treatmentId: treatments[0].id,
         startsAt: `${day}T12:00:00.000Z`,
         patient: {
-          fullName: name,
+          kind: 'new',
+          givenNames: name.split(' ')[0],
+          firstSurname: name.split(' ').slice(1).join(' '),
+          ci: `PR${desktop ? 1 : 2}12345`,
+          phoneCountryCode: '591',
           phone: `7600${desktop ? 11 : 22}00`,
           email: `ficha${tag}@ejemplo.test`,
           birthDate: '1988-02-03',
@@ -81,7 +85,9 @@ test.describe('historia clínica', () => {
     const created = await page.request.post('/api/v1/admin/patients', {
       headers: { Origin: E2E.webUrl },
       data: {
-        fullName: name,
+        givenNames: name.split(' ')[0],
+        firstSurname: name.split(' ').slice(1).join(' '),
+        phoneCountryCode: '591',
         phone: `7610${desktop ? 1 : 2}000`,
         email: null,
         birthDate: '1985-05-05',

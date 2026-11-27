@@ -1,5 +1,6 @@
 import type { AdminAppointment } from '@sistema-dental/contracts';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Agenda del dentista (T-10) con PostgreSQL real. Horas locales de La Paz (UTC-4). */
 describe('agenda (T-10, PostgreSQL real)', () => {
@@ -42,23 +43,16 @@ describe('agenda (T-10, PostgreSQL real)', () => {
   beforeAll(async () => {
     ctx = await startTestApp();
     cookie = await ctx.loginAsDentist();
-    const mk = async (name: string, normalized: string, phone: string, guardian?: string) =>
-      (
-        await ctx.db.query(
-          `INSERT INTO patient (full_name, normalized_name, phone, origin, birth_date, is_minor, guardian_phone)
-           VALUES ($1, $2, $3, 'dentist', $4, $5, $6) RETURNING id`,
-          [
-            name,
-            normalized,
-            phone,
-            guardian ? '2020-01-01' : null,
-            Boolean(guardian),
-            guardian ?? null,
-          ],
-        )
-      )[0].id as string;
-    anaId = await mk('Ana Pérez', 'ana perez', '70011111');
-    luisId = await mk('Luis Niño', 'luis nino', '70022222', '70099999');
+    const mk = (givenNames: string, firstSurname: string, phone: string, guardian?: string) =>
+      insertPatient(ctx.db, {
+        givenNames,
+        firstSurname,
+        phone,
+        birthDate: guardian ? '2020-01-01' : undefined,
+        guardianPhone: guardian,
+      });
+    anaId = await mk('Ana', 'Pérez', '70011111');
+    luisId = await mk('Luis', 'Niño', '70022222', '70099999');
     const t = await ctx.db.query('SELECT id FROM treatment ORDER BY name LIMIT 2');
     treatmentId = t[0].id;
     treatment2Id = t[1].id;
@@ -110,8 +104,10 @@ describe('agenda (T-10, PostgreSQL real)', () => {
       patient: {
         fullName: 'Luis Niño',
         phone: '70022222',
+        phoneCountryCode: '591',
         isMinor: true,
         guardianPhone: '70099999',
+        guardianPhoneCountryCode: '591',
       },
     });
     expect(a.treatment.id).toBe(treatment2Id);

@@ -4,7 +4,7 @@ import type { AdminPatient } from '@sistema-dental/contracts';
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ErrorAlert } from '@/components/ErrorAlert';
-import { formatBirthDate, patientsApi } from '@/features/patients/api';
+import { formatBirthDate, formatPhone, patientsApi } from '@/features/patients/api';
 import { PatientForm } from '@/features/patients/PatientForm';
 
 /**
@@ -135,9 +135,13 @@ export default function PatientsPage() {
                       {p.fullName}{' '}
                       {p.isMinor ? <span className="badge badge-off">Menor</span> : null}
                     </td>
-                    <td data-label="Celular">{p.phone}</td>
+                    <td data-label="Celular">{formatPhone(p.phoneCountryCode, p.phone)}</td>
                     <td data-label="Nacimiento">{formatBirthDate(p.birthDate)}</td>
-                    <td data-label="Apoderado">{p.guardianPhone ?? '—'}</td>
+                    <td data-label="Apoderado">
+                      {p.guardianPhone
+                        ? formatPhone(p.guardianPhoneCountryCode, p.guardianPhone)
+                        : '—'}
+                    </td>
                     <td>
                       <div className="btn-row">
                         <Link className="btn btn-secondary" href={`/panel/pacientes/${p.id}`}>

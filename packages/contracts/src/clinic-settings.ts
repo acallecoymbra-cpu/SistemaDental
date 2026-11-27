@@ -5,9 +5,6 @@ import type { CURRENCY } from './money';
 /** Largo máximo de la referencia al QR (enlace o nombre del archivo; la imagen no va en Git). */
 export const PAYMENT_QR_REF_MAX_LENGTH = 500;
 
-/** Celular de WhatsApp: solo dígitos, con `+` opcional al inicio (7 a 15 dígitos). */
-export const WHATSAPP_PHONE_PATTERN = /^\+?[0-9]{7,15}$/;
-
 /** Lo que ve el dentista en el panel. */
 export interface ClinicSettings {
   /** Precio de la consulta, en centavos de Bs (30 Bs = 3000). */

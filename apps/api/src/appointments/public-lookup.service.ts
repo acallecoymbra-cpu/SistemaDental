@@ -3,17 +3,17 @@ import {
   LOOKUP_BLOCK_MINUTES,
   LOOKUP_MAX_FAILURES,
   LOOKUP_WINDOW_MINUTES,
-  normalizePatientName,
-  normalizePhone,
   type AppointmentStatus,
   type PublicAppointmentSummary,
+  type PublicLookupRequest,
 } from '@sistema-dental/contracts';
 import { DataSource, EntityManager } from 'typeorm';
 import { AuditService, RequestContext } from '../audit/audit.service';
+import { lookupKeyOf, lookupParams, patientLookupSql } from '../patients/patient-lookup';
 
 /** Un solo mensaje para «no existe», «datos mal escritos» y «sin consultas»: no revela nada. */
 const NOT_FOUND = 'No encontramos consultas con esos datos. Revisa tu nombre y tu celular.';
-const BLOCKED = `Demasiados intentos. Espera ${LOOKUP_BLOCK_MINUTES} minutos o escríbenos por WhatsApp.`;
+export const BLOCKED = `Demasiados intentos. Espera ${LOOKUP_BLOCK_MINUTES} minutos o escríbenos por WhatsApp.`;
 const RESULT_LIMIT = 50;
 const RETENTION_HOURS = 24;
 
@@ -27,8 +27,8 @@ interface Row {
 }
 
 /**
- * «Mis consultas» (T-09, CU-03). Sin cuenta: se identifica con nombre + celular (el de la
- * persona o, si es menor, el de su apoderado). Muestra solo lo mínimo de cada consulta.
+ * «Mis consultas» (T-09, CU-03, V-27). Sin cuenta: se identifica con primer nombre + primer
+ * apellido + celular con su país (el de la persona o, si es menor, el de su apoderado). Muestra solo lo mínimo de cada consulta.
  *
  * Protección contra adivinar datos: 5 intentos sin resultado en 10 minutos desde el mismo
  * origen bloquean 15 minutos. El origen se guarda como hash. Mientras dura el bloqueo no se
@@ -43,22 +43,15 @@ export class PublicLookupService {
   ) {}
 
   async lookup(
-    input: { fullName: string; phone: string },
+    input: PublicLookupRequest,
     ctx: RequestContext,
   ): Promise<PublicAppointmentSummary[]> {
-    const origin = this.audit.hashIp(ctx.ip) ?? 'desconocido';
+    const origin = this.originOf(ctx);
     // Se decide dentro de la transacción, pero el error se lanza DESPUÉS de confirmarla: si se
     // lanzara adentro, se desharía el registro del intento fallido y el límite nunca se alcanzaría.
     const outcome = await this.dataSource.transaction(
       async (manager): Promise<'blocked' | 'not_found' | PublicAppointmentSummary[]> => {
-        await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [origin]);
-
-        const [blocked] = await manager.query<{ until: Date | null }[]>(
-          `SELECT max(blocked_until) AS until FROM public_lookup_attempt
-            WHERE origin_hash = $1 AND blocked_until > now()`,
-          [origin],
-        );
-        if (blocked?.until) {
+        if (await this.lockAndCheckBlocked(manager, origin)) {
           return 'blocked';
         }
 
@@ -80,18 +73,41 @@ export class PublicLookupService {
     return outcome;
   }
 
-  private find(manager: EntityManager, input: { fullName: string; phone: string }): Promise<Row[]> {
-    const phone = normalizePhone(input.phone);
+  /** Origen del intento (hash de la IP). Lo comparten «Mis consultas» y la reserva de quien vuelve. */
+  originOf(ctx: RequestContext): string {
+    return this.audit.hashIp(ctx.ip) ?? 'desconocido';
+  }
+
+  /**
+   * Toma el candado del origen hasta el final de la transacción `manager` y dice si está
+   * bloqueado. Lo usa también la reserva «ya estoy registrado» (RF-09 compartido).
+   */
+  async lockAndCheckBlocked(manager: EntityManager, origin: string): Promise<boolean> {
+    await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [origin]);
+    const [blocked] = await manager.query<{ until: Date | null }[]>(
+      `SELECT max(blocked_until) AS until FROM public_lookup_attempt
+        WHERE origin_hash = $1 AND blocked_until > now()`,
+      [origin],
+    );
+    return Boolean(blocked?.until);
+  }
+
+  /** Regla de V-27 (`patient-lookup.ts`). Datos que no sirven para buscar = sin resultados. */
+  private async find(manager: EntityManager, input: PublicLookupRequest): Promise<Row[]> {
+    const key = lookupKeyOf(input);
+    if (!key) {
+      return [];
+    }
     return manager.query<Row[]>(
       `SELECT a.starts_at, a.ends_at, a.status, a.deposit_cents, t.name AS treatment_name,
               EXISTS (SELECT 1 FROM payment_proof pp WHERE pp.appointment_id = a.id) AS has_proof
          FROM appointment a
          JOIN patient p ON p.id = a.patient_id
          JOIN treatment t ON t.id = a.treatment_id
-        WHERE p.normalized_name = $1 AND (p.phone = $2 OR p.guardian_phone = $2)
+        WHERE ${patientLookupSql('p', 1)}
         ORDER BY a.starts_at DESC
         LIMIT ${RESULT_LIMIT}`,
-      [normalizePatientName(input.fullName), phone],
+      lookupParams(key),
     );
   }
 
@@ -114,7 +130,8 @@ export class PublicLookupService {
     );
   }
 
-  private async registerFailure(
+  /** Registra un intento fallido y, si llega al límite, bloquea el origen (y lo audita). */
+  async registerFailure(
     manager: EntityManager,
     origin: string,
     ctx: RequestContext,

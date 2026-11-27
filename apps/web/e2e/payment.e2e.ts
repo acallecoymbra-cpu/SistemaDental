@@ -32,7 +32,9 @@ test.describe('pago por QR y comprobante', () => {
     await page.getByLabel('Tratamiento', { exact: true }).selectOption({ label: 'Limpieza' });
     await page.getByLabel('Fecha', { exact: true }).fill(day);
     await page.getByRole('button', { name: hour, exact: true }).click();
-    await page.getByLabel('Nombre completo').fill(`Paciente Pago ${tag}${n}`);
+    await page.getByLabel('Nombre(s)').fill('Paciente');
+    await page.getByLabel('Primer apellido').fill(`Pago ${tag}${n}`);
+    await page.getByLabel('CI', { exact: true }).fill(`PG${tag}${n}${run}`.slice(0, 20));
     await page.getByLabel('Celular', { exact: true }).fill(`7300${tag === 'D' ? 1 : 2}${n}00`);
     await page.getByLabel('Correo').fill(`pago${tag}${n}@ejemplo.test`);
     await page.getByLabel('Fecha de nacimiento').fill('1990-04-12');
@@ -129,7 +131,9 @@ test.describe('pago por QR y comprobante', () => {
     await page.getByLabel('Tratamiento', { exact: true }).selectOption({ label: 'Limpieza' });
     await page.getByLabel('Fecha', { exact: true }).fill(day);
     await page.getByRole('button', { name: '11:00', exact: true }).click();
-    await page.getByLabel('Nombre completo').fill(`Paciente Pago ${tag}5`);
+    await page.getByLabel('Nombre(s)').fill('Paciente');
+    await page.getByLabel('Primer apellido').fill(`Pago ${tag}5`);
+    await page.getByLabel('CI', { exact: true }).fill(`PG${tag}5${run}`.slice(0, 20));
     await page.getByLabel('Celular', { exact: true }).fill(`7300${tag === 'D' ? 1 : 2}500`);
     await page.getByLabel('Correo').fill(`pago${tag}5@ejemplo.test`);
     await page.getByLabel('Fecha de nacimiento').fill('1990-04-12');

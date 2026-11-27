@@ -21,7 +21,16 @@ test.describe('agenda del dentista', () => {
         data: {
           treatmentId: treatments[0].id,
           startsAt: startsAtUtc,
-          patient: { fullName: name, phone, email: 'a@ejemplo.test', birthDate: '1990-01-01' },
+          patient: {
+            kind: 'new',
+            givenNames: name.split(' ')[0],
+            firstSurname: name.split(' ').slice(1).join(' '),
+            ci: `AG${phone}`,
+            phoneCountryCode: '591',
+            phone,
+            email: 'a@ejemplo.test',
+            birthDate: '1990-01-01',
+          },
         },
       });
       expect(res.status()).toBe(201);

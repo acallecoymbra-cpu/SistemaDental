@@ -16,7 +16,13 @@ describe('ficha del paciente (T-14, PostgreSQL real)', () => {
       .post('/api/v1/admin/patients')
       .set('Origin', TEST_WEB_ORIGIN)
       .set('Cookie', cookie)
-      .send({ fullName: name, phone, birthDate: '1985-03-10' })
+      .send({
+        givenNames: name.split(' ')[0],
+        firstSurname: name.split(' ').slice(1).join(' '),
+        phoneCountryCode: '591',
+        phone,
+        birthDate: '1985-03-10',
+      })
       .expect(201);
     return res.body.patient.id;
   }

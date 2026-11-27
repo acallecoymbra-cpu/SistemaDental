@@ -12,7 +12,7 @@ import {
   STATUS_BADGE,
   STATUS_LABEL,
 } from '@/features/agenda/dates';
-import { formatBirthDate, patientsApi } from '@/features/patients/api';
+import { formatBirthDate, formatPhone, patientsApi } from '@/features/patients/api';
 import { ClinicalHistoryPanel } from '@/features/patients/ClinicalHistoryPanel';
 
 /**
@@ -54,8 +54,14 @@ export default function PatientRecordPage() {
             <h2 id="contacto">Datos de contacto</h2>
             <dl style={{ display: 'grid', gap: 6, margin: 0 }}>
               <div>
+                <dt className="muted">CI</dt>
+                <dd style={{ margin: 0 }}>{record.patient.ci ?? '—'}</dd>
+              </div>
+              <div>
                 <dt className="muted">Celular</dt>
-                <dd style={{ margin: 0 }}>{record.patient.phone}</dd>
+                <dd style={{ margin: 0 }}>
+                  {formatPhone(record.patient.phoneCountryCode, record.patient.phone)}
+                </dd>
               </div>
               <div>
                 <dt className="muted">Correo</dt>
@@ -67,7 +73,14 @@ export default function PatientRecordPage() {
               </div>
               <div>
                 <dt className="muted">Celular del apoderado</dt>
-                <dd style={{ margin: 0 }}>{record.patient.guardianPhone ?? '—'}</dd>
+                <dd style={{ margin: 0 }}>
+                  {record.patient.guardianPhone
+                    ? formatPhone(
+                        record.patient.guardianPhoneCountryCode,
+                        record.patient.guardianPhone,
+                      )
+                    : '—'}
+                </dd>
               </div>
               <div>
                 <dt className="muted">Registrado</dt>

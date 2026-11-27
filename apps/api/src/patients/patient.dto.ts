@@ -1,12 +1,16 @@
 import {
   PATIENT_EMAIL_MAX_LENGTH,
-  PATIENT_NAME_MAX_LENGTH,
+  PATIENT_GIVEN_NAMES_MAX_LENGTH,
+  PATIENT_SURNAME_MAX_LENGTH,
+  PHONE_COUNTRIES,
   type CreatePatientRequest,
+  type PhoneDialCode,
   type UpdatePatientRequest,
 } from '@sistema-dental/contracts';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   Matches,
@@ -15,8 +19,9 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
-const trimOrNull = ({ value }: { value: unknown }) => {
+export const trim = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim() : value;
+export const trimOrNull = ({ value }: { value: unknown }) => {
   if (typeof value !== 'string') {
     return value;
   }
@@ -24,23 +29,49 @@ const trimOrNull = ({ value }: { value: unknown }) => {
   return trimmed.length === 0 ? null : trimmed;
 };
 
-const NAME_MESSAGE = 'El nombre es obligatorio.';
+export const DIAL_CODES = PHONE_COUNTRIES.map((c) => c.dialCode);
+export const GIVEN_NAMES_MESSAGE = 'Escribe tu nombre.';
+export const FIRST_SURNAME_MESSAGE = 'Escribe tu primer apellido.';
+export const COUNTRY_MESSAGE = 'Elige el país del celular.';
 const PHONE_MESSAGE = 'El celular es obligatorio.';
 const EMAIL_MESSAGE = 'El correo no es válido.';
 const DATE_MESSAGE = 'La fecha de nacimiento debe tener el formato AAAA-MM-DD.';
+const GIVEN_MAX = `El nombre admite hasta ${PATIENT_GIVEN_NAMES_MAX_LENGTH} caracteres.`;
+const SURNAME_MAX = `Cada apellido admite hasta ${PATIENT_SURNAME_MAX_LENGTH} caracteres.`;
 
 /**
- * DTOs: solo revisan el FORMATO. Las reglas (celular de 7 a 15 dígitos, menor con apoderado,
- * fecha real y no futura) las revisa el servicio y la base.
+ * DTOs: solo revisan el FORMATO. Las reglas (celular válido para su país, CI, menor con
+ * apoderado, fecha real y no futura) las revisa el servicio y la base.
  */
 export class CreatePatientDto implements CreatePatientRequest {
   @Transform(trim)
-  @IsString({ message: NAME_MESSAGE })
-  @MinLength(1, { message: NAME_MESSAGE })
-  @MaxLength(PATIENT_NAME_MAX_LENGTH, {
-    message: `El nombre admite hasta ${PATIENT_NAME_MAX_LENGTH} caracteres.`,
-  })
-  fullName!: string;
+  @IsString({ message: GIVEN_NAMES_MESSAGE })
+  @MinLength(1, { message: GIVEN_NAMES_MESSAGE })
+  @MaxLength(PATIENT_GIVEN_NAMES_MAX_LENGTH, { message: GIVEN_MAX })
+  givenNames!: string;
+
+  @Transform(trim)
+  @IsString({ message: FIRST_SURNAME_MESSAGE })
+  @MinLength(1, { message: FIRST_SURNAME_MESSAGE })
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, { message: SURNAME_MAX })
+  firstSurname!: string;
+
+  @IsOptional()
+  @Transform(trimOrNull)
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: SURNAME_MAX })
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, { message: SURNAME_MAX })
+  secondSurname?: string | null;
+
+  @IsOptional()
+  @Transform(trimOrNull)
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: 'El CI no es válido.' })
+  @MaxLength(30, { message: 'El CI es demasiado largo.' })
+  ci?: string | null;
+
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  phoneCountryCode!: PhoneDialCode;
 
   @Transform(trim)
   @IsString({ message: PHONE_MESSAGE })
@@ -63,6 +94,11 @@ export class CreatePatientDto implements CreatePatientRequest {
   birthDate?: string | null;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  guardianPhoneCountryCode?: PhoneDialCode | null;
+
+  @IsOptional()
   @Transform(trimOrNull)
   @ValidateIf((_, value) => value !== null)
   @IsString()
@@ -73,12 +109,35 @@ export class CreatePatientDto implements CreatePatientRequest {
 export class UpdatePatientDto implements UpdatePatientRequest {
   @IsOptional()
   @Transform(trim)
-  @IsString({ message: NAME_MESSAGE })
-  @MinLength(1, { message: NAME_MESSAGE })
-  @MaxLength(PATIENT_NAME_MAX_LENGTH, {
-    message: `El nombre admite hasta ${PATIENT_NAME_MAX_LENGTH} caracteres.`,
-  })
-  fullName?: string;
+  @IsString({ message: GIVEN_NAMES_MESSAGE })
+  @MinLength(1, { message: GIVEN_NAMES_MESSAGE })
+  @MaxLength(PATIENT_GIVEN_NAMES_MAX_LENGTH, { message: GIVEN_MAX })
+  givenNames?: string;
+
+  @IsOptional()
+  @Transform(trim)
+  @IsString({ message: FIRST_SURNAME_MESSAGE })
+  @MinLength(1, { message: FIRST_SURNAME_MESSAGE })
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, { message: SURNAME_MAX })
+  firstSurname?: string;
+
+  @IsOptional()
+  @Transform(trimOrNull)
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: SURNAME_MAX })
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, { message: SURNAME_MAX })
+  secondSurname?: string | null;
+
+  @IsOptional()
+  @Transform(trimOrNull)
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: 'El CI no es válido.' })
+  @MaxLength(30, { message: 'El CI es demasiado largo.' })
+  ci?: string | null;
+
+  @IsOptional()
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  phoneCountryCode?: PhoneDialCode;
 
   @IsOptional()
   @Transform(trim)
@@ -100,6 +159,11 @@ export class UpdatePatientDto implements UpdatePatientRequest {
   @IsString({ message: DATE_MESSAGE })
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: DATE_MESSAGE })
   birthDate?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  guardianPhoneCountryCode?: PhoneDialCode | null;
 
   @IsOptional()
   @Transform(trimOrNull)

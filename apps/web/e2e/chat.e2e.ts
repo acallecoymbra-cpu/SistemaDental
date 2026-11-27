@@ -6,7 +6,7 @@ test.describe('chat de ayuda', () => {
   test.beforeEach(async ({ page }) => {
     // El chat ofrece el WhatsApp configurado por la doctora: se deja uno conocido.
     await loginAsDentist(page);
-    await setClinicSettings(page, { whatsappPhone: '59170000000' });
+    await setClinicSettings(page, { whatsappPhone: '+59170000000' });
     await page.context().clearCookies();
     await page.goto('/');
     await page.getByRole('button', { name: 'Chat de ayuda' }).click();

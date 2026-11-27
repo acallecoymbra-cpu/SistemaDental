@@ -1,13 +1,18 @@
 'use client';
 
 import {
+  PATIENT_GIVEN_NAMES_MAX_LENGTH,
+  PATIENT_SURNAME_MAX_LENGTH,
   isMinorOn,
   todayInClinicTimeZone,
   type AvailableSlot,
+  type BookingPatientRequest,
+  type PhoneDialCode,
   type PublicBooking,
   type PublicTreatment,
 } from '@sistema-dental/contracts';
 import { useId, useState, type FormEvent } from 'react';
+import { PhoneInput } from '@/components/PhoneInput';
 import styles from '@/app/portal.module.css';
 import { ApiError } from '@/lib/api-client';
 import { bookingApi } from './api';
@@ -69,20 +74,34 @@ export function BookingFlow({ treatments }: { treatments: PublicTreatment[] }) {
       setErrors(['Elige una fecha y un horario.']);
       return;
     }
+    const dial = (name: string) => text(name) as PhoneDialCode;
+    const patient: BookingPatientRequest =
+      registered === 'si'
+        ? {
+            kind: 'returning',
+            firstName: text('firstName'),
+            firstSurname: text('firstSurname'),
+            phoneCountryCode: dial('phoneCountryCode'),
+            phone: text('phone'),
+            email: text('email'),
+          }
+        : {
+            kind: 'new',
+            givenNames: text('givenNames'),
+            firstSurname: text('firstSurname'),
+            secondSurname: text('secondSurname') || null,
+            ci: text('ci') || null,
+            phoneCountryCode: dial('phoneCountryCode'),
+            phone: text('phone'),
+            email: text('email'),
+            birthDate: text('birthDate'),
+            guardianPhoneCountryCode: showGuardian ? dial('guardianPhoneCountryCode') : null,
+            guardianPhone: showGuardian ? text('guardianPhone') || null : null,
+          };
     setSending(true);
     setErrors([]);
     try {
-      const result = await bookingApi.book({
-        treatmentId,
-        startsAt,
-        patient: {
-          fullName: text('fullName'),
-          phone: text('phone'),
-          email: text('email'),
-          birthDate: registered === 'no' ? text('birthDate') || null : null,
-          guardianPhone: registered === 'no' ? text('guardianPhone') || null : null,
-        },
-      });
+      const result = await bookingApi.book({ treatmentId, startsAt, patient });
       setBooking(result);
     } catch (error) {
       setErrors(messageOf(error));
@@ -195,14 +214,66 @@ export function BookingFlow({ treatments }: { treatments: PublicTreatment[] }) {
             </label>
           </div>
         </fieldset>
+        {registered === 'si' ? (
+          <div className={styles.fieldGroup}>
+            <label htmlFor={`${id}-first-name`}>Nombre</label>
+            <input
+              id={`${id}-first-name`}
+              name="firstName"
+              autoComplete="given-name"
+              maxLength={PATIENT_GIVEN_NAMES_MAX_LENGTH}
+            />
+            <span className={styles.hint}>Basta con tu primer nombre.</span>
+          </div>
+        ) : (
+          <div className={styles.fieldGroup}>
+            <label htmlFor={`${id}-given`}>Nombre(s)</label>
+            <input
+              id={`${id}-given`}
+              name="givenNames"
+              autoComplete="given-name"
+              maxLength={PATIENT_GIVEN_NAMES_MAX_LENGTH}
+            />
+          </div>
+        )}
         <div className={styles.fieldGroup}>
-          <label htmlFor={`${id}-name`}>Nombre completo</label>
-          <input id={`${id}-name`} name="fullName" autoComplete="name" maxLength={120} />
+          <label htmlFor={`${id}-surname`}>Primer apellido</label>
+          <input
+            id={`${id}-surname`}
+            name="firstSurname"
+            autoComplete="family-name"
+            maxLength={PATIENT_SURNAME_MAX_LENGTH}
+          />
         </div>
-        <div className={styles.fieldGroup}>
-          <label htmlFor={`${id}-phone`}>Celular</label>
-          <input id={`${id}-phone`} name="phone" inputMode="tel" autoComplete="tel" />
-        </div>
+        {registered === 'no' ? (
+          <>
+            <div className={styles.fieldGroup}>
+              <label htmlFor={`${id}-surname2`}>Segundo apellido (opcional)</label>
+              <input
+                id={`${id}-surname2`}
+                name="secondSurname"
+                maxLength={PATIENT_SURNAME_MAX_LENGTH}
+              />
+            </div>
+            <div className={styles.fieldGroup}>
+              <label htmlFor={`${id}-ci`}>CI</label>
+              <input id={`${id}-ci`} name="ci" maxLength={30} autoComplete="off" />
+              <span className={styles.hint}>Obligatorio si eres mayor de edad.</span>
+            </div>
+          </>
+        ) : null}
+        <PhoneInput
+          id={`${id}-phone`}
+          name="phone"
+          label="Celular"
+          fieldClassName={styles.fieldGroup}
+          hintClassName={styles.hint}
+          hint={
+            registered === 'si'
+              ? 'Si la consulta es de un menor de edad, escribe el celular de su apoderado.'
+              : undefined
+          }
+        />
         <div className={styles.fieldGroup}>
           <label htmlFor={`${id}-email`}>Correo</label>
           <input id={`${id}-email`} name="email" type="email" autoComplete="email" />
@@ -220,11 +291,16 @@ export function BookingFlow({ treatments }: { treatments: PublicTreatment[] }) {
               />
             </div>
             {showGuardian ? (
-              <div className={styles.fieldGroup}>
-                <label htmlFor={`${id}-guardian`}>Celular del apoderado</label>
-                <input id={`${id}-guardian`} name="guardianPhone" inputMode="tel" />
-                <span className={styles.hint}>Obligatorio para menores de 18 años.</span>
-              </div>
+              <PhoneInput
+                id={`${id}-guardian`}
+                name="guardianPhone"
+                label="Celular del apoderado"
+                countryLabel="Código del país del apoderado"
+                autoComplete="off"
+                fieldClassName={styles.fieldGroup}
+                hintClassName={styles.hint}
+                hint="Obligatorio para menores de 18 años."
+              />
             ) : null}
           </>
         ) : null}

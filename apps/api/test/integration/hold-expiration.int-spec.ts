@@ -1,5 +1,6 @@
 import { HoldExpirationJob } from '../../src/appointments/hold-expiration.job';
 import { startTestApp, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Vencimiento automático de reservas (T-08) con PostgreSQL real. */
 describe('vencimiento de reservas (T-08, PostgreSQL real)', () => {
@@ -43,10 +44,14 @@ describe('vencimiento de reservas (T-08, PostgreSQL real)', () => {
   beforeAll(async () => {
     ctx = await startTestApp();
     job = ctx.app.get(HoldExpirationJob);
-    const [patient] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ('Paciente Vence', 'paciente vence', '70800001', 'dentist') RETURNING id`,
-    );
+    const patient = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Vence',
+        phone: '70800001',
+        origin: 'dentist',
+      }),
+    };
     patientId = patient.id;
     treatmentId = (await ctx.db.query('SELECT id FROM treatment LIMIT 1'))[0].id;
   });

@@ -1,17 +1,33 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   BOOKING_HOLD_MINUTES,
   CLINIC_TIME_ZONE,
   MAX_PENDING_APPOINTMENTS_PER_PATIENT,
   SLOT_MINUTES,
   normalizeReceiptNumber,
+  type BookingPatientRequest,
   type PaymentProofReceived,
   type PublicBooking,
 } from '@sistema-dental/contracts';
 import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { AuditService, RequestContext } from '../audit/audit.service';
-import { PatientsService, isUniqueViolation } from '../patients/patients.service';
+import {
+  PATIENT_CI_CONSTRAINT,
+  PatientsService,
+  RETURNING_NOT_FOUND,
+  WEB_REGISTRATION_FAILED,
+  isUniqueViolation,
+  violatedConstraint,
+} from '../patients/patients.service';
 import { AppointmentHoldsService } from './appointment-holds.service';
+import { BLOCKED, PublicLookupService } from './public-lookup.service';
 import type { CreatePublicBookingDto, SubmitPaymentProofDto } from './booking.dto';
 
 const NO_TREATMENT = 'El tratamiento no está disponible.';
@@ -56,6 +72,7 @@ export class AppointmentsService {
     private readonly audit: AuditService,
     private readonly patients: PatientsService,
     private readonly holds: AppointmentHoldsService,
+    private readonly lookups: PublicLookupService,
   ) {}
 
   async createPublicBooking(
@@ -66,8 +83,22 @@ export class AppointmentsService {
     // crear al paciente; se repite una vez y ya lo encuentra.
     for (let attempt = 0; ; attempt += 1) {
       try {
-        return await this.dataSource.transaction((manager) => this.book(manager, dto, ctx));
+        const outcome = await this.dataSource.transaction((manager) =>
+          this.book(manager, dto, ctx),
+        );
+        // Los errores del límite se lanzan DESPUÉS de confirmar, para no deshacer el intento.
+        if (outcome === 'blocked') {
+          throw new HttpException(BLOCKED, HttpStatus.TOO_MANY_REQUESTS);
+        }
+        if (outcome === 'not_found') {
+          throw new BadRequestException(RETURNING_NOT_FOUND);
+        }
+        return outcome;
       } catch (error) {
+        // CI repetido: error genérico, sin revelar que ese CI existe.
+        if (isUniqueViolation(error) && violatedConstraint(error) === PATIENT_CI_CONSTRAINT) {
+          throw new BadRequestException(WEB_REGISTRATION_FAILED);
+        }
         if (isUniqueViolation(error) && attempt === 0) {
           continue;
         }
@@ -83,7 +114,15 @@ export class AppointmentsService {
     manager: EntityManager,
     dto: CreatePublicBookingDto,
     ctx: RequestContext,
-  ): Promise<PublicBooking> {
+  ): Promise<PublicBooking | 'blocked' | 'not_found'> {
+    // «Ya estoy registrado» comparte el límite de intentos de «Mis consultas» (RF-09): mismo
+    // origen, mismo candado y mismo bloqueo.
+    const returning = dto.patient.kind === 'returning';
+    const origin = this.lookups.originOf(ctx);
+    if (returning && (await this.lookups.lockAndCheckBlocked(manager, origin))) {
+      return 'blocked';
+    }
+
     const [treatment] = await manager.query<{ id: string; name: string }[]>(
       'SELECT id, name FROM treatment WHERE id = $1 AND active = true',
       [dto.treatmentId],
@@ -110,13 +149,24 @@ export class AppointmentsService {
       throw new ConflictException(SLOT_UNAVAILABLE);
     }
 
-    const patient = await this.patients.findOrCreateForBooking(manager, {
-      fullName: dto.patient.fullName,
-      phone: dto.patient.phone,
-      email: dto.patient.email,
-      birthDate: dto.patient.birthDate ?? null,
-      guardianPhone: dto.patient.guardianPhone ?? null,
-    });
+    let patient;
+    try {
+      patient = await this.patients.findOrCreateForBooking(
+        manager,
+        dto.patient as unknown as BookingPatientRequest,
+      );
+    } catch (error) {
+      if (
+        returning &&
+        error instanceof BadRequestException &&
+        error.message === RETURNING_NOT_FOUND
+      ) {
+        // Hasta aquí la transacción solo leyó: se confirma con el intento fallido registrado.
+        await this.lookups.registerFailure(manager, origin, ctx);
+        return 'not_found';
+      }
+      throw error;
+    }
 
     const [counted] = await manager.query<{ pending: string }[]>(
       `SELECT count(*) AS pending FROM appointment

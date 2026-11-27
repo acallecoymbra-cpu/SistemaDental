@@ -20,7 +20,11 @@ test.describe('cancelar consulta', () => {
         treatmentId: treatments[0].id,
         startsAt: `${day}T12:00:00.000Z`,
         patient: {
-          fullName: name,
+          kind: 'new',
+          givenNames: name.split(' ')[0],
+          firstSurname: name.split(' ').slice(1).join(' '),
+          ci: `CA${desktop ? 1 : 2}12345`,
+          phoneCountryCode: '591',
           phone: `7900${desktop ? 1 : 2}100`,
           email: `cancela${tag}@ejemplo.test`,
           birthDate: '1990-01-01',

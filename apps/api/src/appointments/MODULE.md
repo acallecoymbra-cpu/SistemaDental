@@ -4,13 +4,13 @@ Citas. Por ahora solo la reserva pública; la agenda del dentista (T-10) y los c
 
 ## Ruta pública
 
-- `POST /api/v1/appointments` (sin sesión, con `Origin` permitido): `{ treatmentId, startsAt, patient: { fullName, phone, email, birthDate?, guardianPhone? } }` → 201 `PublicBooking` (`id`, `startsAt`, `endsAt`, `holdExpiresAt`, `treatmentName`, `depositCents`).
+- `POST /api/v1/appointments` (sin sesión, con `Origin` permitido): `{ treatmentId, startsAt, patient }` con `patient` = `{ kind: 'returning', firstName, firstSurname, phoneCountryCode, phone, email }` o `{ kind: 'new', givenNames, firstSurname, secondSurname?, ci?, phoneCountryCode, phone, email, birthDate, guardianPhoneCountryCode?, guardianPhone? }` → 201 `PublicBooking` (`id`, `startsAt`, `endsAt`, `holdExpiresAt`, `treatmentName`, `depositCents`).
 
 ## Reglas (todo en una transacción)
 
 1. Tratamiento activo (404 si no).
 2. `startsAt` debe ser una franja de las que ofrece `GET /availability/slots` (409 si no, incluido hoy y el pasado).
-3. Paciente: se reconoce por nombre normalizado + celular y se bloquea su fila; si no existe se crea con origen `web` (entonces `birthDate` es obligatoria, y un menor exige `guardianPhone`). A un paciente existente no se le cambian datos desde el portal (solo se completa el correo si faltaba).
+3. Paciente: `returning` se reconoce con la regla de `patients/patient-lookup.ts` y se bloquea su fila (0 coincidencias → 400; varias → 409, escribir por WhatsApp). `new` se crea con origen `web`: `birthDate` obligatoria, CI obligatorio para adultos, un menor exige `guardianPhone`; si la regla de consulta lo confundiría con alguien que ya existe → 409 (debe elegir «Sí, ya estoy registrado»); CI repetido → 400 genérico (no revela que el CI existe). A un paciente existente no se le cambian datos desde el portal (solo se completa el correo si faltaba).
 4. Máximo 3 pendientes por paciente (`por_pagar` con reserva vigente) → 409.
 5. Se cancelan las `por_pagar` vencidas que chocan con la franja (`appointment_hold_expired`, actor sistema) y se inserta con `hold_expires_at = now() + 8 min` y el anticipo vigente como copia (`deposit_cents`). Si dos reservan la misma franja a la vez, la restricción de exclusión deja pasar a uno y el otro recibe 409.
 
@@ -44,9 +44,10 @@ Citas. Por ahora solo la reserva pública; la agenda del dentista (T-10) y los c
 
 ## Mis consultas (T-09)
 
-- `POST /api/v1/appointments/lookup` (sin sesión): `{ fullName, phone }` → 200 con la lista `PublicAppointmentSummary` (`startsAt`, `endsAt`, `treatmentName`, `status`, `depositCents`, `paymentReceived`). Nada clínico, sin ids y sin datos de otras personas.
-- Identidad: nombre normalizado (sin tildes ni mayúsculas) + celular del paciente **o** de su apoderado (un menor se consulta con su nombre y el celular del apoderado). Máx. 50 consultas, las más recientes primero.
+- `POST /api/v1/appointments/lookup` (sin sesión): `{ firstName, firstSurname, phoneCountryCode, phone }` → 200 con la lista `PublicAppointmentSummary` (`startsAt`, `endsAt`, `treatmentName`, `status`, `depositCents`, `paymentReceived`). Nada clínico, sin ids y sin datos de otras personas.
+- Identidad (V-27): primer nombre (o todos los nombres) + primer apellido, sin tildes, mayúsculas, espacios ni puntos, + país y celular del paciente **o** de su apoderado (un menor se consulta con su nombre y el celular del apoderado). Si varios pacientes coinciden, se listan las consultas de todos. Máx. 50 consultas, las más recientes primero.
 - Un solo mensaje 404 para «nombre inexistente», «celular equivocado» y «sin consultas»: no revela qué falló.
+- **Límite compartido (RF-09):** la reserva «ya estoy registrado» sin coincidencias cuenta como intento fallido del mismo origen; 5 fallos en 10 min (entre «Mis consultas» y esa reserva) bloquean ambos caminos 15 min (429). Usa el mismo candado por origen y registra el fallo antes de responder. Varias coincidencias (409) y los registros de pacientes nuevos no cuentan.
 - Límite (`public_lookup_attempt`): 5 intentos sin resultado en 10 minutos desde el mismo origen → 429 por 15 minutos (no se consulta nada mientras dure, y no se extiende). El origen es un hash de la IP (`AUDIT_IP_SALT`), nunca la IP; un candado por origen impide saltarse el límite con peticiones simultáneas. Los aciertos no cuentan. Las filas de más de 24 h se borran al registrar nuevos intentos.
 - El intento fallido se confirma **antes** de lanzar el 404 (si el error se lanzara dentro de la transacción, se desharía el registro).
 - Auditoría `public_lookup_blocked` (actor anónimo) cuando un origen se bloquea, sin datos personales.
@@ -71,7 +72,6 @@ Citas. Por ahora solo la reserva pública; la agenda del dentista (T-10) y los c
 - **Proveedor de correo: pendiente de decidir.** `Mailer` es un puerto (`src/mail/mailer.ts`). Mientras no se conecte uno real, `UnconfiguredMailer` NO finge enviar: falla con `mail_not_configured` y el aviso queda `failed` en la agenda (la doctora ve «No se pudo enviar el correo» y puede avisar por WhatsApp). Para activar el envío hay que implementar `Mailer` con el proveedor elegido (por ejemplo SMTP) y registrarlo en `AppointmentsModule`.
 
 ## Pendiente para otras tareas
-
 
 ## Reprogramar y «no asistió» (T-12)
 

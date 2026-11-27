@@ -3,6 +3,8 @@ import {
   CURRENCY,
   DEPOSIT_MAX_CENTS,
   DEPOSIT_MIN_CENTS,
+  isValidNationalNumber,
+  parseE164,
   type ClinicSettings,
   type PublicClinicInfo,
 } from '@sistema-dental/contracts';
@@ -13,6 +15,16 @@ import { ClinicSettingsRow } from './clinic-settings.entity';
 
 const DEPOSIT_RANGE = 'El anticipo debe estar entre 10 y 20 Bs.';
 const DEPOSIT_VS_PRICE = 'El anticipo no puede ser mayor que el precio de la consulta.';
+const WHATSAPP_INVALID = 'El WhatsApp no es válido para el país elegido.';
+
+/** El WhatsApp llega como `+<código><número>`: el número debe ser válido para su país. */
+function assertValidWhatsapp(value: string | null): void {
+  if (value === null) return;
+  const { dialCode, national } = parseE164(value);
+  if (!value.startsWith(`+${dialCode}`) || !isValidNationalNumber(dialCode, national)) {
+    throw new BadRequestException(WHATSAPP_INVALID);
+  }
+}
 const PG_CHECK_VIOLATION = '23514';
 
 export function toClinicSettings(row: ClinicSettingsRow): ClinicSettings {
@@ -103,7 +115,10 @@ export class ClinicService {
         }
         if (dto.depositCents !== undefined) current.depositCents = dto.depositCents;
         if (dto.paymentQrRef !== undefined) current.paymentQrRef = dto.paymentQrRef;
-        if (dto.whatsappPhone !== undefined) current.whatsappPhone = dto.whatsappPhone;
+        if (dto.whatsappPhone !== undefined) {
+          assertValidWhatsapp(dto.whatsappPhone);
+          current.whatsappPhone = dto.whatsappPhone;
+        }
         // Se valida el resultado final (lo guardado + lo enviado).
         assertValidSettings(current.consultationPriceCents, current.depositCents);
         current.updatedBy = actorUserId;

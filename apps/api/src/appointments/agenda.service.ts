@@ -5,6 +5,7 @@ import {
   isAppointmentStatus,
   normalizePatientName,
   normalizePhone,
+  type PhoneDialCode,
   todayInClinicTimeZone,
   type AdminAppointment,
   type AppointmentStatus,
@@ -37,6 +38,8 @@ interface Row {
   patient_id: string;
   patient_name: string;
   patient_phone: string;
+  patient_phone_country_code: PhoneDialCode;
+  patient_guardian_phone_country_code: PhoneDialCode | null;
   patient_is_minor: boolean;
   patient_guardian_phone: string | null;
   deposit_cents: string;
@@ -71,6 +74,8 @@ const SELECT = `
          en.delivery_status AS notification_status, (en.id IS NOT NULL) AS notification_exists,
          t.id AS treatment_id, t.name AS treatment_name,
          p.id AS patient_id, p.full_name AS patient_name, p.phone AS patient_phone,
+         p.phone_country_code AS patient_phone_country_code,
+         p.guardian_phone_country_code AS patient_guardian_phone_country_code,
          p.is_minor AS patient_is_minor, p.guardian_phone AS patient_guardian_phone
     FROM appointment a
     JOIN patient p ON p.id = a.patient_id
@@ -90,8 +95,10 @@ function toAdminAppointment(row: Row): AdminAppointment {
       id: row.patient_id,
       fullName: row.patient_name,
       phone: row.patient_phone,
+      phoneCountryCode: row.patient_phone_country_code,
       isMinor: row.patient_is_minor,
       guardianPhone: row.patient_guardian_phone,
+      guardianPhoneCountryCode: row.patient_guardian_phone_country_code,
     },
     depositCents: Number(row.deposit_cents),
     origin: row.origin,

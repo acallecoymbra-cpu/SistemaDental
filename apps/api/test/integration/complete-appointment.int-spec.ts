@@ -1,4 +1,5 @@
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Cerrar consulta (T-17) con PostgreSQL real. Datos inventados. */
 describe('cerrar consulta (T-17, PostgreSQL real)', () => {
@@ -36,10 +37,14 @@ describe('cerrar consulta (T-17, PostgreSQL real)', () => {
     cookie = await ctx.loginAsDentist();
     const [t] = await ctx.db.query('SELECT id FROM treatment WHERE active = true LIMIT 1');
     treatmentId = t.id;
-    const [p] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ('Paciente Cierra', 'paciente cierra', '75900001', 'web') RETURNING id`,
-    );
+    const p = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Cierra',
+        phone: '75900001',
+        origin: 'web',
+      }),
+    };
     patientId = p.id;
   });
   afterAll(async () => {
@@ -89,6 +94,8 @@ describe('cerrar consulta (T-17, PostgreSQL real)', () => {
     const saved = await row(id);
     expect(saved).toMatchObject({ status: 'completada', diagnosis: 'Obturación en 46' });
     expect(Number(saved.cost_cents)).toBe(20000);
+    expect(saved.completed_at).toBeInstanceOf(Date);
+    expect(saved.completed_by).toEqual(expect.any(String));
     const [audit] = await ctx.db.query(
       `SELECT actor_kind, before_json, after_json FROM audit_log
         WHERE entity_id = $1 AND action = 'appointment_completed'`,

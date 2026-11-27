@@ -4,6 +4,7 @@ import {
   type AvailableSlotsResponse,
 } from '@sistema-dental/contracts';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /**
  * Citas (restricciones de la base) y horarios libres (T-03), con PostgreSQL real.
@@ -62,10 +63,14 @@ describe('citas y horarios libres (T-03, PostgreSQL real)', () => {
   beforeAll(async () => {
     ctx = await startTestApp();
     cookie = await ctx.loginAsDentist();
-    const [patient] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ('Paciente Citas', 'paciente citas', '70900001', 'dentist') RETURNING id`,
-    );
+    const patient = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Citas',
+        phone: '70900001',
+        origin: 'dentist',
+      }),
+    };
     patientId = patient.id;
     const [treatment] = await ctx.db.query('SELECT id FROM treatment LIMIT 1');
     treatmentId = treatment.id;

@@ -5,17 +5,30 @@ import {
   DEPOSIT_MIN_CENTS,
   PAYMENT_QR_REF_MAX_LENGTH,
   formatCentsAsBs,
+  normalizeNationalNumber,
   parseBsToCents,
+  parseE164,
+  toE164,
   type ClinicSettings,
+  type PhoneDialCode,
   type UpdateClinicSettingsRequest,
 } from '@sistema-dental/contracts';
 import { useId, useState, type FormEvent } from 'react';
+import { PhoneInput } from '@/components/PhoneInput';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { ApiError } from '@/lib/api-client';
 
 interface Props {
   initial: ClinicSettings;
   onSubmit: (values: UpdateClinicSettingsRequest) => Promise<void>;
+}
+
+/** WhatsApp para guardar: `+<código><número>`, o vacío si no se escribió número. */
+function whatsappValue(form: FormData): string {
+  const national = String(form.get('whatsapp') ?? '').replace(/\D/g, '');
+  if (!national) return '';
+  const dialCode = String(form.get('whatsappCountryCode') ?? '591') as PhoneDialCode;
+  return toE164(dialCode, normalizeNationalNumber(dialCode, national));
 }
 
 /**
@@ -26,6 +39,7 @@ export function ClinicSettingsForm({ initial, onSubmit }: Props) {
   const id = useId();
   const [error, setError] = useState<unknown>(null);
   const [sending, setSending] = useState(false);
+  const savedWhatsapp = initial.whatsappPhone ? parseE164(initial.whatsappPhone) : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,7 +57,7 @@ export function ClinicSettingsForm({ initial, onSubmit }: Props) {
         consultationPriceCents: price,
         depositCents: deposit,
         paymentQrRef: String(form.get('qr') ?? ''),
-        whatsappPhone: String(form.get('whatsapp') ?? ''),
+        whatsappPhone: whatsappValue(form),
       });
     } catch (err) {
       setError(err);
@@ -91,16 +105,18 @@ export function ClinicSettingsForm({ initial, onSubmit }: Props) {
           Enlace o nombre del archivo del QR vigente. La imagen no se guarda en el sistema.
         </span>
       </div>
-      <div className="field">
-        <label htmlFor={`${id}-whatsapp`}>WhatsApp del consultorio</label>
-        <input
-          id={`${id}-whatsapp`}
-          name="whatsapp"
-          inputMode="tel"
-          defaultValue={initial.whatsappPhone ?? ''}
-        />
-        <span className="hint">Solo dígitos, con el código de país. Ejemplo: 59170000000.</span>
-      </div>
+      <PhoneInput
+        id={`${id}-whatsapp`}
+        name="whatsapp"
+        label="WhatsApp del consultorio"
+        countryLabel="Código del país del WhatsApp"
+        autoComplete="off"
+        defaultDialCode={savedWhatsapp?.dialCode}
+        defaultNumber={savedWhatsapp?.national ?? ''}
+        fieldClassName="field"
+        hintClassName="hint"
+        hint="El número sin el código de país. Déjalo vacío para no mostrar WhatsApp."
+      />
       <div className="btn-row">
         <button className="btn" type="submit" disabled={sending}>
           {sending ? 'Guardando…' : 'Guardar configuración'}

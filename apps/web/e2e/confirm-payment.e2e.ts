@@ -23,7 +23,11 @@ test.describe('confirmar pago', () => {
           treatmentId: treatments[0].id,
           startsAt: `${day}T${hour}:00.000Z`,
           patient: {
-            fullName: `Paciente Confirma ${tag}${i}`,
+            kind: 'new',
+            givenNames: 'Paciente',
+            firstSurname: `Confirma ${tag}${i}`,
+            ci: `CF${desktop ? 1 : 2}${i}1234`,
+            phoneCountryCode: '591',
             phone: `7800${desktop ? 1 : 2}${i}00`,
             email: `cf${tag}${i}@ejemplo.test`,
             birthDate: '1990-01-01',

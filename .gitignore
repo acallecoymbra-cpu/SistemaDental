@@ -10,6 +10,8 @@ coverage/
 
 # Datos locales (base de datos, subidas)
 .data/
+# Archivos reales solo para probar en local (p. ej. el QR de pago): nunca al repositorio público
+apps/web/public/local/
 *.sqlite
 *.sqlite3
 *.db

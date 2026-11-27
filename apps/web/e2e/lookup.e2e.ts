@@ -20,7 +20,16 @@ test.describe('mis consultas', () => {
       data: {
         treatmentId: treatments[0].id,
         startsAt: `${day}T12:00:00.000Z`,
-        patient: { fullName: name, phone, email: `mc${tag}@ejemplo.test`, birthDate: '1990-01-01' },
+        patient: {
+          kind: 'new',
+          givenNames: 'Paciente',
+          firstSurname: `Mis Consultas ${tag}`,
+          ci: `MC${tag}1234`,
+          phoneCountryCode: '591',
+          phone,
+          email: `mc${tag}@ejemplo.test`,
+          birthDate: '1990-01-01',
+        },
       },
     });
     expect(booked.status()).toBe(201);
@@ -32,16 +41,20 @@ test.describe('mis consultas', () => {
     await page.waitForLoadState('networkidle'); // el formulario ya está listo para enviarse
     await expect(page.getByRole('heading', { name: 'Mis consultas', level: 1 })).toBeVisible();
 
+    // Bolivia viene preseleccionada
+    await expect(page.getByLabel('Código del país', { exact: true })).toHaveValue('591');
+
     // Un dato equivocado: mensaje genérico
-    await page.getByLabel('Nombre completo').fill(name);
-    await page.getByLabel('Celular').fill('70000001');
+    await page.getByLabel('Nombre', { exact: true }).fill('Paciente');
+    await page.getByLabel('Primer apellido').fill(`mis consultas ${tag}`);
+    await page.getByLabel('Celular', { exact: true }).fill('70000001');
     await page.getByRole('button', { name: 'Ver mis consultas' }).click();
     await expect(
       page.getByRole('alert').filter({ hasText: 'No encontramos consultas con esos datos' }),
     ).toBeVisible();
 
     // Con los datos correctos
-    await page.getByLabel('Celular').fill(phone);
+    await page.getByLabel('Celular', { exact: true }).fill(phone);
     await page.getByRole('button', { name: 'Ver mis consultas' }).click();
     const list = page.getByRole('region', { name: 'Tus consultas' });
     await expect(list).toBeVisible();
@@ -66,8 +79,9 @@ test.describe('mis consultas', () => {
     await page.goto('/mis-consultas');
     const blocked = page.getByRole('alert').filter({ hasText: 'Demasiados intentos' });
     for (let i = 0; i < 6 && !(await blocked.isVisible()); i += 1) {
-      await page.getByLabel('Nombre completo').fill('Nadie Inventado');
-      await page.getByLabel('Celular').fill('70000000');
+      await page.getByLabel('Nombre', { exact: true }).fill('Nadie');
+      await page.getByLabel('Primer apellido').fill('Inventado');
+      await page.getByLabel('Celular', { exact: true }).fill('70000000');
       await page.getByRole('button', { name: 'Ver mis consultas' }).click();
       await expect(page.getByRole('alert').first()).toBeVisible();
     }

@@ -7,6 +7,7 @@ import {
   formatShortDate,
   formatTime,
   localDate,
+  patientWhatsappLink,
   rangeFor,
   shiftDate,
   weekRange,
@@ -48,4 +49,32 @@ test('la hora y el día se muestran en La Paz, no en UTC', () => {
 test('formatos de pantalla', () => {
   assert.equal(formatShortDate('2033-03-07'), '07/03/2033');
   assert.match(formatDayTitle('2033-03-07'), /lunes,? 7 de marzo de 2033/);
+});
+
+test('el WhatsApp del paciente usa su código de país', () => {
+  const link = patientWhatsappLink(
+    {
+      fullName: 'Juan Paz',
+      phone: '91123456789',
+      phoneCountryCode: '54',
+      guardianPhone: null,
+      guardianPhoneCountryCode: null,
+    },
+    'Hola',
+  );
+  assert.equal(link, 'https://wa.me/5491123456789?text=Hola');
+});
+
+test('el WhatsApp de un menor va al celular de su apoderado, con su país', () => {
+  const link = patientWhatsappLink(
+    {
+      fullName: 'Tomás Vaca',
+      phone: '70000001',
+      phoneCountryCode: '591',
+      guardianPhone: '981000000',
+      guardianPhoneCountryCode: '595',
+    },
+    'Hola',
+  );
+  assert.equal(link, 'https://wa.me/595981000000?text=Hola');
 });

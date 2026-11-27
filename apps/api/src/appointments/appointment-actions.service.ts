@@ -51,18 +51,27 @@ export class AppointmentActionsService {
     ctx: RequestContext,
   ): Promise<AdminAppointment> {
     await this.dataSource.transaction(async (manager) => {
-      const [row] = await manager.query<
-        { status: string; proof_id: string | null; proof_confirmed: boolean }[]
-      >(
-        `SELECT a.status, pp.id AS proof_id, (pp.confirmed_at IS NOT NULL) AS proof_confirmed
-           FROM appointment a
-           LEFT JOIN payment_proof pp ON pp.appointment_id = a.id
-          WHERE a.id = $1 FOR UPDATE OF a`,
+      // Primero se bloquea la cita y DESPUÉS se lee el comprobante, en otra consulta. Si se leyera
+      // en la misma consulta (JOIN + FOR UPDATE), quien esperó el bloqueo vería la cita ya
+      // confirmada pero el comprobante como estaba antes (PostgreSQL solo relee la fila
+      // bloqueada) y respondería 409 a una confirmación repetida.
+      const [appointment] = await manager.query<{ status: string }[]>(
+        'SELECT status FROM appointment WHERE id = $1 FOR UPDATE',
         [id],
       );
-      if (!row) {
+      if (!appointment) {
         throw new NotFoundException(NOT_FOUND);
       }
+      const [proof] = await manager.query<{ id: string; confirmed: boolean }[]>(
+        `SELECT id, (confirmed_at IS NOT NULL) AS confirmed
+           FROM payment_proof WHERE appointment_id = $1`,
+        [id],
+      );
+      const row = {
+        status: appointment.status,
+        proof_id: proof?.id ?? null,
+        proof_confirmed: proof?.confirmed ?? false,
+      };
       if (row.status === 'confirmada' && row.proof_confirmed) {
         return; // ya confirmada por otra petición: mismo resultado, sin repetir
       }
@@ -323,9 +332,10 @@ export class AppointmentActionsService {
       }
       await manager.query(
         `UPDATE appointment
-            SET status = 'completada', diagnosis = $2, cost_cents = $3, updated_at = now()
+            SET status = 'completada', diagnosis = $2, cost_cents = $3,
+                completed_at = now(), completed_by = $4, updated_at = now()
           WHERE id = $1`,
-        [id, input.diagnosis, input.costCents],
+        [id, input.diagnosis, input.costCents, actorUserId],
       );
       await this.audit.record(
         {

@@ -5,10 +5,10 @@
 
 ## Endpoints
 
-| Método y ruta | Acceso | Respuesta |
-|---|---|---|
-| `GET /api/v1/clinic` | Público | `PublicClinicInfo`: precio, anticipo y WhatsApp. **Sin el QR** |
-| `GET /api/v1/admin/clinic-settings` | Dentista | `ClinicSettings` completo, con la referencia del QR |
+| Método y ruta                         | Acceso   | Respuesta                                                                                          |
+| ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/clinic`                  | Público  | `PublicClinicInfo`: precio, anticipo y WhatsApp. **Sin el QR**                                     |
+| `GET /api/v1/admin/clinic-settings`   | Dentista | `ClinicSettings` completo, con la referencia del QR                                                |
 | `PATCH /api/v1/admin/clinic-settings` | Dentista | `ClinicSettings`; acepta `consultationPriceCents`, `depositCents`, `paymentQrRef`, `whatsappPhone` |
 
 No hay POST ni DELETE: la fila la crea la migración.

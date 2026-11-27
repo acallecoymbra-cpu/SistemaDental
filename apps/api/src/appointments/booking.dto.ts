@@ -1,27 +1,35 @@
 import {
   PATIENT_EMAIL_MAX_LENGTH,
-  PATIENT_NAME_MAX_LENGTH,
+  PATIENT_GIVEN_NAMES_MAX_LENGTH,
+  PATIENT_SURNAME_MAX_LENGTH,
   RECEIPT_NUMBER_PATTERN,
-  type BookingPatientRequest,
+  type PhoneDialCode,
   type CancelAppointmentRequest,
   CANCEL_REASON_MAX_LENGTH,
   COMPLETE_COST_MAX_CENTS,
   COMPLETE_DIAGNOSIS_MAX_LENGTH,
   type CompleteAppointmentRequest,
-  type CreatePublicBookingRequest,
   type PublicLookupRequest,
   type RescheduleAppointmentRequest,
   type SubmitPaymentProofRequest,
 } from '@sistema-dental/contracts';
 import { Transform, Type } from 'class-transformer';
 import {
+  COUNTRY_MESSAGE,
+  DIAL_CODES,
+  FIRST_SURNAME_MESSAGE,
+  GIVEN_NAMES_MESSAGE,
+  trim,
+  trimOrNull,
+} from '../patients/patient.dto';
+import {
   IsEmail,
+  IsIn,
   IsInt,
   Max,
   Min,
   IsISO8601,
   IsNotEmptyObject,
-  IsOptional,
   IsString,
   IsUUID,
   Matches,
@@ -31,24 +39,58 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
-const trimOrNull = ({ value }: { value: unknown }) => {
-  if (typeof value !== 'string') {
-    return value;
-  }
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? null : trimmed;
-};
+/**
+ * DTOs: solo revisan el FORMATO; las reglas las decide el servicio y la base.
+ * El paciente llega como `kind: 'returning'` (ya registrado) o `kind: 'new'`; cada campo se
+ * valida solo para la variante que lo usa.
+ */
+const isReturning = (o: BookingPatientDto) => o.kind === 'returning';
+const isNew = (o: BookingPatientDto) => o.kind === 'new';
 
-/** DTOs: solo revisan el FORMATO; las reglas las decide el servicio y la base. */
-export class BookingPatientDto implements BookingPatientRequest {
+export class BookingPatientDto {
+  @IsIn(['returning', 'new'], { message: 'Indica si ya te atendiste con nosotros.' })
+  kind!: 'returning' | 'new';
+
+  @ValidateIf(isReturning)
   @Transform(trim)
-  @IsString({ message: 'El nombre es obligatorio.' })
-  @MinLength(1, { message: 'El nombre es obligatorio.' })
-  @MaxLength(PATIENT_NAME_MAX_LENGTH, {
-    message: `El nombre admite hasta ${PATIENT_NAME_MAX_LENGTH} caracteres.`,
+  @IsString({ message: GIVEN_NAMES_MESSAGE })
+  @MinLength(1, { message: GIVEN_NAMES_MESSAGE })
+  @MaxLength(PATIENT_GIVEN_NAMES_MAX_LENGTH, { message: GIVEN_NAMES_MESSAGE })
+  firstName?: string;
+
+  @ValidateIf(isNew)
+  @Transform(trim)
+  @IsString({ message: GIVEN_NAMES_MESSAGE })
+  @MinLength(1, { message: GIVEN_NAMES_MESSAGE })
+  @MaxLength(PATIENT_GIVEN_NAMES_MAX_LENGTH, {
+    message: `El nombre admite hasta ${PATIENT_GIVEN_NAMES_MAX_LENGTH} caracteres.`,
   })
-  fullName!: string;
+  givenNames?: string;
+
+  @Transform(trim)
+  @IsString({ message: FIRST_SURNAME_MESSAGE })
+  @MinLength(1, { message: FIRST_SURNAME_MESSAGE })
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, {
+    message: `Cada apellido admite hasta ${PATIENT_SURNAME_MAX_LENGTH} caracteres.`,
+  })
+  firstSurname!: string;
+
+  @ValidateIf((o: BookingPatientDto, value) => isNew(o) && value != null)
+  @Transform(trimOrNull)
+  @IsString()
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, {
+    message: `Cada apellido admite hasta ${PATIENT_SURNAME_MAX_LENGTH} caracteres.`,
+  })
+  secondSurname?: string | null;
+
+  @ValidateIf((o: BookingPatientDto, value) => isNew(o) && value != null)
+  @Transform(trimOrNull)
+  @IsString({ message: 'El CI no es válido.' })
+  @MaxLength(30, { message: 'El CI es demasiado largo.' })
+  ci?: string | null;
+
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  phoneCountryCode!: PhoneDialCode;
 
   @Transform(trim)
   @IsString({ message: 'El celular es obligatorio.' })
@@ -61,23 +103,25 @@ export class BookingPatientDto implements BookingPatientRequest {
   @MaxLength(PATIENT_EMAIL_MAX_LENGTH, { message: 'Escribe un correo válido.' })
   email!: string;
 
-  @IsOptional()
+  @ValidateIf((o: BookingPatientDto, value) => isNew(o) && value != null)
   @Transform(trimOrNull)
-  @ValidateIf((_, value) => value !== null)
   @Matches(/^\d{4}-\d{2}-\d{2}$/, {
     message: 'La fecha de nacimiento debe tener el formato AAAA-MM-DD.',
   })
   birthDate?: string | null;
 
-  @IsOptional()
+  @ValidateIf((o: BookingPatientDto, value) => isNew(o) && value != null)
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  guardianPhoneCountryCode?: PhoneDialCode | null;
+
+  @ValidateIf((o: BookingPatientDto, value) => isNew(o) && value != null)
   @Transform(trimOrNull)
-  @ValidateIf((_, value) => value !== null)
   @IsString({ message: 'El celular del apoderado no es válido.' })
   @MaxLength(30, { message: 'El celular del apoderado es demasiado largo.' })
   guardianPhone?: string | null;
 }
 
-export class CreatePublicBookingDto implements CreatePublicBookingRequest {
+export class CreatePublicBookingDto {
   @IsUUID('4', { message: 'Elige un tratamiento.' })
   treatmentId!: string;
 
@@ -101,10 +145,19 @@ export class SubmitPaymentProofDto implements SubmitPaymentProofRequest {
 
 export class PublicLookupDto implements PublicLookupRequest {
   @Transform(trim)
-  @IsString({ message: 'Escribe tu nombre completo.' })
-  @MinLength(1, { message: 'Escribe tu nombre completo.' })
-  @MaxLength(PATIENT_NAME_MAX_LENGTH, { message: 'Escribe tu nombre completo.' })
-  fullName!: string;
+  @IsString({ message: GIVEN_NAMES_MESSAGE })
+  @MinLength(1, { message: GIVEN_NAMES_MESSAGE })
+  @MaxLength(PATIENT_GIVEN_NAMES_MAX_LENGTH, { message: GIVEN_NAMES_MESSAGE })
+  firstName!: string;
+
+  @Transform(trim)
+  @IsString({ message: FIRST_SURNAME_MESSAGE })
+  @MinLength(1, { message: FIRST_SURNAME_MESSAGE })
+  @MaxLength(PATIENT_SURNAME_MAX_LENGTH, { message: FIRST_SURNAME_MESSAGE })
+  firstSurname!: string;
+
+  @IsIn(DIAL_CODES, { message: COUNTRY_MESSAGE })
+  phoneCountryCode!: PhoneDialCode;
 
   @Transform(trim)
   @IsString({ message: 'Escribe tu celular.' })

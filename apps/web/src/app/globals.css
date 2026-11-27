@@ -145,6 +145,7 @@ h3 {
 }
 
 .field input,
+.field select,
 .field textarea {
   font: inherit;
   padding: var(--space-2) var(--space-3);
@@ -155,6 +156,7 @@ h3 {
 }
 
 .field input:focus-visible,
+.field select:focus-visible,
 .field textarea:focus-visible,
 .btn:focus-visible {
   outline: 3px solid var(--color-primary-soft);

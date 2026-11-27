@@ -2,17 +2,25 @@
 
 import {
   PATIENT_EMAIL_MAX_LENGTH,
-  PATIENT_NAME_MAX_LENGTH,
+  PATIENT_GIVEN_NAMES_MAX_LENGTH,
+  PATIENT_SURNAME_MAX_LENGTH,
   type AdminPatient,
+  type PhoneDialCode,
 } from '@sistema-dental/contracts';
 import { useId, useState, type FormEvent } from 'react';
+import { PhoneInput } from '@/components/PhoneInput';
 import { ErrorAlert } from '@/components/ErrorAlert';
 
 export interface PatientFormValues {
-  fullName: string;
+  givenNames: string;
+  firstSurname: string;
+  secondSurname: string | null;
+  ci: string | null;
+  phoneCountryCode: PhoneDialCode;
   phone: string;
   email: string | null;
   birthDate: string | null;
+  guardianPhoneCountryCode: PhoneDialCode | null;
   guardianPhone: string | null;
 }
 
@@ -45,12 +53,20 @@ export function PatientForm({ initial, submitLabel, onSubmit, onCancel }: Props)
     setSending(true);
     setError(null);
     try {
+      const guardianPhone = emptyToNull(form.get('guardianPhone'));
       await onSubmit({
-        fullName: String(form.get('fullName') ?? '').trim(),
+        givenNames: String(form.get('givenNames') ?? '').trim(),
+        firstSurname: String(form.get('firstSurname') ?? '').trim(),
+        secondSurname: emptyToNull(form.get('secondSurname')),
+        ci: emptyToNull(form.get('ci')),
+        phoneCountryCode: String(form.get('phoneCountryCode') ?? '591') as PhoneDialCode,
         phone: String(form.get('phone') ?? '').trim(),
         email: emptyToNull(form.get('email')),
         birthDate: emptyToNull(form.get('birthDate')),
-        guardianPhone: emptyToNull(form.get('guardianPhone')),
+        guardianPhoneCountryCode: guardianPhone
+          ? (String(form.get('guardianPhoneCountryCode') ?? '591') as PhoneDialCode)
+          : null,
+        guardianPhone,
       });
       if (!initial) {
         formElement.reset();
@@ -66,25 +82,48 @@ export function PatientForm({ initial, submitLabel, onSubmit, onCancel }: Props)
     <form className="form" onSubmit={handleSubmit} noValidate>
       <ErrorAlert error={error} />
       <div className="field">
-        <label htmlFor={`${id}-name`}>Nombre completo</label>
+        <label htmlFor={`${id}-given`}>Nombre(s)</label>
         <input
-          id={`${id}-name`}
-          name="fullName"
-          defaultValue={initial?.fullName}
-          maxLength={PATIENT_NAME_MAX_LENGTH}
+          id={`${id}-given`}
+          name="givenNames"
+          defaultValue={initial?.givenNames}
+          maxLength={PATIENT_GIVEN_NAMES_MAX_LENGTH}
           required
         />
       </div>
       <div className="field">
-        <label htmlFor={`${id}-phone`}>Celular</label>
+        <label htmlFor={`${id}-surname`}>Primer apellido</label>
         <input
-          id={`${id}-phone`}
-          name="phone"
-          inputMode="tel"
-          defaultValue={initial?.phone}
+          id={`${id}-surname`}
+          name="firstSurname"
+          defaultValue={initial?.firstSurname}
+          maxLength={PATIENT_SURNAME_MAX_LENGTH}
           required
         />
       </div>
+      <div className="field">
+        <label htmlFor={`${id}-surname2`}>Segundo apellido (opcional)</label>
+        <input
+          id={`${id}-surname2`}
+          name="secondSurname"
+          defaultValue={initial?.secondSurname ?? ''}
+          maxLength={PATIENT_SURNAME_MAX_LENGTH}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor={`${id}-ci`}>CI (opcional)</label>
+        <input id={`${id}-ci`} name="ci" defaultValue={initial?.ci ?? ''} maxLength={30} />
+      </div>
+      <PhoneInput
+        id={`${id}-phone`}
+        name="phone"
+        label="Celular"
+        defaultDialCode={initial?.phoneCountryCode}
+        defaultNumber={initial?.phone}
+        required
+        fieldClassName="field"
+        hintClassName="hint"
+      />
       <div className="field">
         <label htmlFor={`${id}-email`}>Correo (opcional)</label>
         <input
@@ -104,16 +143,18 @@ export function PatientForm({ initial, submitLabel, onSubmit, onCancel }: Props)
           defaultValue={initial?.birthDate ?? ''}
         />
       </div>
-      <div className="field">
-        <label htmlFor={`${id}-guardian`}>Celular del apoderado</label>
-        <input
-          id={`${id}-guardian`}
-          name="guardianPhone"
-          inputMode="tel"
-          defaultValue={initial?.guardianPhone ?? ''}
-        />
-        <span className="hint">Obligatorio si el paciente es menor de 18 años.</span>
-      </div>
+      <PhoneInput
+        id={`${id}-guardian`}
+        name="guardianPhone"
+        label="Celular del apoderado"
+        countryLabel="Código del país del apoderado"
+        autoComplete="off"
+        defaultDialCode={initial?.guardianPhoneCountryCode ?? undefined}
+        defaultNumber={initial?.guardianPhone ?? ''}
+        fieldClassName="field"
+        hintClassName="hint"
+        hint="Obligatorio si el paciente es menor de 18 años."
+      />
       <div className="btn-row">
         <button className="btn" type="submit" disabled={sending}>
           {sending ? 'Guardando…' : submitLabel}

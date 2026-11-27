@@ -1,6 +1,7 @@
 /** «Mis consultas» (RF-09, T-09): el paciente consulta con nombre y celular, sin cuenta. */
 
 import type { AppointmentStatus } from './appointment-status';
+import type { PhoneDialCode } from './phone';
 
 /** Intentos fallidos permitidos en la ventana antes de bloquear. */
 export const LOOKUP_MAX_FAILURES = 5;
@@ -10,10 +11,13 @@ export const LOOKUP_WINDOW_MINUTES = 10;
 export const LOOKUP_BLOCK_MINUTES = 15;
 
 /**
- * Un adulto escribe su nombre y su celular. Un menor, su nombre y el celular de su apoderado.
+ * Un adulto escribe su primer nombre, su primer apellido y su celular (sin el código de país,
+ * que se elige aparte). Un menor, sus nombres y el celular de su apoderado.
  */
 export interface PublicLookupRequest {
-  fullName: string;
+  firstName: string;
+  firstSurname: string;
+  phoneCountryCode: PhoneDialCode;
   phone: string;
 }
 

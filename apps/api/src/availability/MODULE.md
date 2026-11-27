@@ -5,12 +5,12 @@
 
 ## Endpoints
 
-| Método y ruta | Acceso | Respuesta |
-|---|---|---|
-| `GET /api/v1/admin/availability-intervals` | Dentista | `AvailabilityInterval[]`, por fecha y hora de inicio |
-| `POST /api/v1/admin/availability-intervals` | Dentista | `AvailabilityInterval` (201) |
-| `PATCH /api/v1/admin/availability-intervals/:id` | Dentista | `AvailabilityInterval`; acepta `serviceDate`, `startsLocal`, `endsLocal` |
-| `DELETE /api/v1/admin/availability-intervals/:id` | Dentista | 204 sin cuerpo |
+| Método y ruta                                     | Acceso   | Respuesta                                                                |
+| ------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `GET /api/v1/admin/availability-intervals`        | Dentista | `AvailabilityInterval[]`, por fecha y hora de inicio                     |
+| `POST /api/v1/admin/availability-intervals`       | Dentista | `AvailabilityInterval` (201)                                             |
+| `PATCH /api/v1/admin/availability-intervals/:id`  | Dentista | `AvailabilityInterval`; acepta `serviceDate`, `startsLocal`, `endsLocal` |
+| `DELETE /api/v1/admin/availability-intervals/:id` | Dentista | 204 sin cuerpo                                                           |
 
 No hay rutas públicas: el paciente verá franjas libres mediante T-03.
 
@@ -23,6 +23,7 @@ No hay rutas públicas: el paciente verá franjas libres mediante T-03.
 - Auditoría: `availability_interval_created`, `_updated` (antes y después) y `_deleted` (antes), en la misma transacción.
 
 ## Cita confirmada y horarios libres (T-03)
+
 - Al editar, mover o eliminar un intervalo se rechaza con 409 si una cita `confirmada` quedaría fuera (misma transacción). Pruebas en `test/integration/appointments-slots.int-spec.ts`.
 - `GET /api/v1/availability/slots?date=AAAA-MM-DD` (público): franjas libres de 45 min dentro de cada intervalo; la última cabe completa. Hoy y el pasado devuelven lista vacía. Ocupan franja las citas `confirmada`, `completada`, `no_asistio` y las `por_pagar` con reserva vigente; una reserva vencida o cancelada libera su franja.
 - **Pendiente T-07:** una `por_pagar` vencida pero con comprobante enviado debe seguir ocupando la franja (hoy solo se mira `hold_expires_at`). Extender la consulta de `listSlots` cuando exista `payment_proof`.

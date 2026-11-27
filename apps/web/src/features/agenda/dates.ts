@@ -84,15 +84,23 @@ export const STATUS_BADGE = {
 } as const;
 
 /**
- * Enlace de WhatsApp para escribirle al paciente (al apoderado si es menor). Los celulares se
- * guardan sin código de país: si tienen 8 dígitos se agrega el de Bolivia (591).
+ * Enlace de WhatsApp para escribirle al paciente (al apoderado si es menor). Cada celular se
+ * guarda como número nacional con su código de país aparte.
  */
 export function patientWhatsappLink(
-  patient: { fullName: string; phone: string; guardianPhone: string | null },
+  patient: {
+    fullName: string;
+    phone: string;
+    phoneCountryCode: string;
+    guardianPhone: string | null;
+    guardianPhoneCountryCode: string | null;
+  },
   message: string,
 ): string | null {
-  const digits = (patient.guardianPhone ?? patient.phone).replace(/\D/g, '');
-  if (digits.length < 7) return null;
-  const full = digits.length === 8 ? `591${digits}` : digits;
-  return `https://wa.me/${full}?text=${encodeURIComponent(message)}`;
+  const [dial, number] = patient.guardianPhone
+    ? [patient.guardianPhoneCountryCode ?? '591', patient.guardianPhone]
+    : [patient.phoneCountryCode, patient.phone];
+  const digits = number.replace(/\D/g, '');
+  if (digits.length < 6) return null;
+  return `https://wa.me/${dial}${digits}?text=${encodeURIComponent(message)}`;
 }

@@ -21,7 +21,11 @@ test.describe('reprogramar y no asistió', () => {
         treatmentId: treatments[0].id,
         startsAt: `${day}T12:00:00.000Z`,
         patient: {
-          fullName: name,
+          kind: 'new',
+          givenNames: name.split(' ')[0],
+          firstSurname: name.split(' ').slice(1).join(' '),
+          ci: `RP${desktop ? 1 : 2}12345`,
+          phoneCountryCode: '591',
           phone: `7910${desktop ? 1 : 2}100`,
           email: `mueve${tag}@ejemplo.test`,
           birthDate: '1990-01-01',
@@ -83,9 +87,19 @@ test.describe('reprogramar y no asistió', () => {
     await db.connect();
     try {
       const patient = await db.query(
-        `INSERT INTO patient (full_name, normalized_name, phone, origin)
-         VALUES ($1, $3, $2, 'web') RETURNING id`,
-        [name, `7920${desktop ? 1 : 2}100`, name.toLowerCase()],
+        `INSERT INTO patient (full_name, normalized_name, given_names, first_surname,
+                              first_given_name_key, given_names_key, first_surname_key,
+                              phone_country_code, phone, origin)
+         VALUES ($1, $3, $4, $5, $6, $6, $7, '591', $2, 'web') RETURNING id`,
+        [
+          name,
+          `7920${desktop ? 1 : 2}100`,
+          name.toLowerCase(),
+          name.split(' ')[0],
+          name.split(' ').slice(1).join(' '),
+          name.split(' ')[0]!.toLowerCase(),
+          name.split(' ').slice(1).join('').toLowerCase(),
+        ],
       );
       const treatment = await db.query('SELECT id FROM treatment WHERE active = true LIMIT 1');
       await db.query(
@@ -135,9 +149,19 @@ test.describe('cerrar consulta', () => {
     await db.connect();
     try {
       const patient = await db.query(
-        `INSERT INTO patient (full_name, normalized_name, phone, origin)
-         VALUES ($1, $3, $2, 'web') RETURNING id`,
-        [name, `7930${desktop ? 1 : 2}100`, name.toLowerCase()],
+        `INSERT INTO patient (full_name, normalized_name, given_names, first_surname,
+                              first_given_name_key, given_names_key, first_surname_key,
+                              phone_country_code, phone, origin)
+         VALUES ($1, $3, $4, $5, $6, $6, $7, '591', $2, 'web') RETURNING id`,
+        [
+          name,
+          `7930${desktop ? 1 : 2}100`,
+          name.toLowerCase(),
+          name.split(' ')[0],
+          name.split(' ').slice(1).join(' '),
+          name.split(' ')[0]!.toLowerCase(),
+          name.split(' ').slice(1).join('').toLowerCase(),
+        ],
       );
       const treatment = await db.query('SELECT id FROM treatment WHERE active = true LIMIT 1');
       await db.query(

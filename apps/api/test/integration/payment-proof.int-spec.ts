@@ -17,8 +17,32 @@ describe('comprobante de pago (T-07, PostgreSQL real)', () => {
     new Date(Date.parse(`${date}T${hhmm}:00.000Z`) + 4 * 3_600_000).toISOString();
 
   /** Reserva una franja nueva (cada llamada usa la siguiente de 45 min del día +20). */
+  const registered = new Set<string>();
+
+  /** Reserva como paciente nuevo; si ese celular ya reservó, como «ya estoy registrado». */
   async function reserve(phone?: string): Promise<PublicBooking> {
     seq += 1;
+    const cel = phone ?? `7400${String(seq).padStart(4, '0')}`;
+    const patient = registered.has(cel)
+      ? {
+          kind: 'returning',
+          firstName: 'Paciente',
+          firstSurname: `Comprobante ${cel}`,
+          phoneCountryCode: '591',
+          phone: cel,
+          email: `c${seq}@ejemplo.test`,
+        }
+      : {
+          kind: 'new',
+          givenNames: 'Paciente',
+          firstSurname: `Comprobante ${cel}`,
+          ci: `CP${cel}`,
+          phoneCountryCode: '591',
+          phone: cel,
+          email: `c${seq}@ejemplo.test`,
+          birthDate: '1990-05-20',
+        };
+    registered.add(cel);
     const minutes = 8 * 60 + (seq - 1) * 45;
     const hhmm = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
     const res = await ctx
@@ -28,12 +52,7 @@ describe('comprobante de pago (T-07, PostgreSQL real)', () => {
       .send({
         treatmentId,
         startsAt: at(addDays(20), hhmm),
-        patient: {
-          fullName: `Paciente Comprobante ${phone ?? seq}`,
-          phone: phone ?? `7400${String(seq).padStart(4, '0')}`,
-          email: `c${seq}@ejemplo.test`,
-          birthDate: '1990-05-20',
-        },
+        patient,
       })
       .expect(201);
     return res.body as PublicBooking;
@@ -200,7 +219,11 @@ describe('comprobante de pago (T-07, PostgreSQL real)', () => {
         treatmentId,
         startsAt: booking.startsAt,
         patient: {
-          fullName: 'Otra Persona',
+          kind: 'new',
+          givenNames: 'Otra',
+          firstSurname: 'Persona',
+          ci: '7499999',
+          phoneCountryCode: '591',
           phone: '74999999',
           email: 'o@ejemplo.test',
           birthDate: '1990-01-01',
@@ -227,10 +250,12 @@ describe('comprobante de pago (T-07, PostgreSQL real)', () => {
         treatmentId,
         startsAt: at(addDays(20), '21:30'),
         patient: {
-          fullName: `Paciente Comprobante ${phone}`,
+          kind: 'returning',
+          firstName: 'Paciente',
+          firstSurname: `Comprobante ${phone}`,
+          phoneCountryCode: '591',
           phone,
           email: 'c@ejemplo.test',
-          birthDate: '1990-05-20',
         },
       })
       .expect(409);

@@ -1,5 +1,6 @@
 import { HoldExpirationJob } from '../../src/appointments/hold-expiration.job';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
 
 /** Confirmar pago (T-11) con PostgreSQL real. Datos inventados. */
 describe('confirmar pago (T-11, PostgreSQL real)', () => {
@@ -69,10 +70,14 @@ describe('confirmar pago (T-11, PostgreSQL real)', () => {
     cookie = await ctx.loginAsDentist();
     const [t] = await ctx.db.query('SELECT id FROM treatment WHERE active = true LIMIT 1');
     treatmentId = t.id;
-    const [p] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin)
-       VALUES ('Paciente Confirma', 'paciente confirma', '75500001', 'web') RETURNING id`,
-    );
+    const p = {
+      id: await insertPatient(ctx.db, {
+        givenNames: 'Paciente',
+        firstSurname: 'Confirma',
+        phone: '75500001',
+        origin: 'web',
+      }),
+    };
     patientId = p.id;
   });
 
@@ -162,6 +167,15 @@ describe('confirmar pago (T-11, PostgreSQL real)', () => {
     expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200, 200]);
     expect(await auditCount(id)).toBe(1);
     expect((await stateOf(id)).status).toBe('confirmada');
+  });
+
+  it('confirmaciones en paralelo, repetidas muchas veces: nunca un 409 (carrera al esperar el bloqueo)', async () => {
+    for (let round = 0; round < 15; round += 1) {
+      const id = await appointment('por_pagar', true, 5);
+      const results = await Promise.all(Array.from({ length: 6 }, () => confirm(id)));
+      expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200, 200]);
+      expect(await auditCount(id)).toBe(1);
+    }
   });
 
   it('no existe forma de rechazar el pago', async () => {

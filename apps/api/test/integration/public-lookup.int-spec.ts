@@ -1,5 +1,12 @@
-import { normalizePatientName } from '@sistema-dental/contracts';
 import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from './helpers';
+import { insertPatient } from './patient-fixtures';
+
+/** «Nombre Apellido…» → primer nombre + primer apellido (resto de palabras). */
+const split = (name: unknown): [unknown, unknown] => {
+  if (typeof name !== 'string') return [name, name];
+  const [first = '', ...rest] = name.trim().split(/\s+/);
+  return [first, rest.join(' ')];
+};
 
 /** «Mis consultas» (T-09) con PostgreSQL real, incluido el límite de intentos. Datos inventados. */
 describe('mis consultas (T-09, PostgreSQL real)', () => {
@@ -9,31 +16,30 @@ describe('mis consultas (T-09, PostgreSQL real)', () => {
 
   const GENERIC = 'No encontramos consultas con esos datos. Revisa tu nombre y tu celular.';
 
-  const lookup = (fullName: unknown, phone: unknown) =>
-    ctx.http().post('/api/v1/appointments/lookup').set('Origin', TEST_WEB_ORIGIN).send({
-      fullName,
+  const lookup = (name: unknown, phone: unknown, phoneCountryCode: unknown = '591') => {
+    const [firstName, firstSurname] = split(name);
+    return ctx.http().post('/api/v1/appointments/lookup').set('Origin', TEST_WEB_ORIGIN).send({
+      firstName,
+      firstSurname,
+      phoneCountryCode,
       phone,
     });
+  };
 
   async function patient(
     name: string,
     phone: string,
     extra: { guardian?: string; birth?: string } = {},
   ): Promise<string> {
-    const [row] = await ctx.db.query(
-      `INSERT INTO patient (full_name, normalized_name, phone, origin, birth_date, is_minor,
-                            guardian_phone)
-       VALUES ($1, $6, $2, 'web', $3, $4, $5) RETURNING id`,
-      [
-        name,
-        phone,
-        extra.birth ?? '1990-01-01',
-        Boolean(extra.guardian),
-        extra.guardian ?? null,
-        normalizePatientName(name),
-      ],
-    );
-    return row.id;
+    const [givenNames, firstSurname] = split(name) as [string, string];
+    return insertPatient(ctx.db, {
+      givenNames,
+      firstSurname,
+      phone,
+      birthDate: extra.birth ?? '1990-01-01',
+      guardianPhone: extra.guardian,
+      origin: 'web',
+    });
   }
 
   async function appointment(
@@ -106,9 +112,30 @@ describe('mis consultas (T-09, PostgreSQL real)', () => {
 
   it('reconoce el nombre sin importar mayúsculas ni tildes, y el celular con o sin 591', async () => {
     const id = await patient('Jose Peña', '76300002');
-    await ctx.db.query(`UPDATE patient SET normalized_name = 'jose pena' WHERE id = $1`, [id]);
     await appointment(id);
     await lookup('  JOSÉ   PEÑA ', '+591 7630-0002').expect(200);
+  });
+
+  it('acepta el primer nombre o todos los nombres, con apellido compuesto escrito distinto', async () => {
+    const id = await insertPatient(ctx.db, {
+      givenNames: 'María José',
+      firstSurname: 'de la Roca',
+      phone: '76300020',
+    });
+    await appointment(id);
+    const body = (firstName: string, phoneCountryCode = '591') => ({
+      firstName,
+      firstSurname: 'De La  roca',
+      phoneCountryCode,
+      phone: '76300020',
+    });
+    const post = (b: object) =>
+      ctx.http().post('/api/v1/appointments/lookup').set('Origin', TEST_WEB_ORIGIN).send(b);
+    await post(body('maria')).expect(200);
+    await post(body('María José')).expect(200);
+    await post(body('José')).expect(404);
+    // el mismo número con otro país no es la misma persona
+    await post(body('maria', '54')).expect(404);
   });
 
   it('indica si el paciente ya envió su comprobante', async () => {

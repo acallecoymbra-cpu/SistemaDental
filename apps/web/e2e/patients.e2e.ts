@@ -24,17 +24,21 @@ test.describe('pacientes', () => {
     async function fill(
       fullName: string,
       cellphone: string,
-      extra?: { birth?: string; guardian?: string },
+      extra?: { birth?: string; guardian?: string; ci?: string },
     ) {
-      await createForm.getByLabel('Nombre completo').fill(fullName);
+      const [given = '', ...rest] = fullName.split(' ');
+      await createForm.getByLabel('Nombre(s)').fill(given);
+      await createForm.getByLabel('Primer apellido').fill(rest.join(' '));
+      await createForm.getByLabel('CI (opcional)').fill(extra?.ci ?? '');
       await createForm.getByLabel('Celular', { exact: true }).fill(cellphone);
       await createForm.getByLabel('Fecha de nacimiento (opcional)').fill(extra?.birth ?? '');
       await createForm.getByLabel('Celular del apoderado').fill(extra?.guardian ?? '');
       await createForm.getByRole('button', { name: 'Agregar' }).click();
     }
 
-    // Crear
-    await fill(name, phone);
+    // Crear (con CI)
+    const ci = `${Math.floor(Math.random() * 9_000_000) + 1_000_000}`;
+    await fill(name, phone, { ci: `${ci} sc` });
     await expect(page.getByRole('status').first()).toContainText(`«${name}» agregado.`);
     await expect(page.getByRole('row', { name: new RegExp(name) })).toContainText(phone);
 
@@ -79,5 +83,11 @@ test.describe('pacientes', () => {
     await page.getByLabel('Correo (opcional)').last().fill('nuevo@ejemplo.test');
     await page.getByRole('button', { name: 'Guardar cambios' }).click();
     await expect(page.getByRole('status').first()).toContainText('Cambios guardados.');
+
+    // El CI se puede buscar y se ve en la ficha
+    await page.getByLabel('Buscar por nombre o celular').fill(`${ci}SC`);
+    await page.getByRole('button', { name: 'Buscar' }).click();
+    await page.getByRole('row').filter({ hasText: name }).getByRole('link').first().click();
+    await expect(page.getByText(`${ci}SC`)).toBeVisible();
   });
 });
